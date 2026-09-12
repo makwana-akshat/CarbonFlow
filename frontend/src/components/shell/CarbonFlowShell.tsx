@@ -15,6 +15,7 @@ import { LogisticsRoutePlanning } from '../logistics/LogisticsRoutePlanning';
 import { Button } from '../ui/Button';
 import { CheckCircle2, Menu } from 'lucide-react';
 import { UserMenu } from '../auth/UserMenu';
+import { CarbonImpactPage } from '../impact/CarbonImpactPage';
 
 export interface CarbonFlowShellProps {
   appUser?: {
@@ -24,11 +25,16 @@ export interface CarbonFlowShellProps {
     role?: string;
   } | null;
   isDemoMode?: boolean;
+  initialTab?: TabId;
 }
 
-export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({ appUser, isDemoMode = false }) => {
+export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
+  appUser,
+  isDemoMode = false,
+  initialTab = 'overview',
+}) => {
   // Application State
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [userRole, setUserRole] = useState<UserRole>('buyer');
   const [dashboardState, setDashboardState] = useState<DashboardState>('success');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -185,7 +191,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({ appUser, isDem
                 </span>
                 <span className="text-[var(--text-secondary)]">/</span>
                 <h1 className="text-[15px] font-semibold text-[var(--ink)] capitalize">
-                  {activeTab === 'ui-gallery' ? 'UI Kit Gallery' : activeTab}
+                  {activeTab === 'ui-gallery' ? 'UI Kit Gallery' : activeTab === 'carbon-impact' ? 'Carbon Impact' : activeTab}
                 </h1>
               </div>
             </div>
@@ -350,6 +356,11 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({ appUser, isDem
                   {/* UI Kit Gallery Tab */}
                   {activeTab === 'ui-gallery' && (
                     <ComponentGallery />
+                  )}
+
+                  {/* Carbon Impact Tab */}
+                  {activeTab === 'carbon-impact' && (
+                    <CarbonImpactPage />
                   )}
                 </>
               )}

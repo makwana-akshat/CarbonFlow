@@ -323,26 +323,35 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
               {isImpactOpen && (
                 <div className="flex flex-col gap-0.5 pl-3">
                   {[
-                    { id: 'ui-gallery' as TabId, label: 'Carbon Impact', icon: Leaf },
+                    { id: 'carbon-impact' as TabId, label: 'Carbon Impact', icon: Leaf },
                     { id: 'overview' as TabId, label: 'Alerts & SCADA', icon: Bell, badge: '2' },
                     { id: 'orders' as TabId, label: 'Audit Contracts', icon: ShieldCheck }
-                  ].map((sub) => (
-                    <button
-                      key={sub.label}
-                      onClick={() => handleNavClick(sub.id)}
-                      className="flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)]/50 hover:text-[var(--ink)] transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <sub.icon className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                        <span>{sub.label}</span>
-                      </div>
-                      {sub.badge && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700">
-                          {sub.badge}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                  ].map((sub) => {
+                    const isActive = activeTab === sub.id;
+                    return (
+                      <button
+                        key={sub.label}
+                        onClick={() => handleNavClick(sub.id)}
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors text-left ${
+                          isActive
+                            ? 'bg-[var(--surface-muted)] text-[var(--ink)] font-semibold shadow-2xs'
+                            : 'text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)]/50 hover:text-[var(--ink)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <sub.icon className={`w-3.5 h-3.5 transition-colors ${
+                            isActive ? 'text-[var(--accent-primary)]' : 'text-[var(--text-secondary)]'
+                          }`} />
+                          <span>{sub.label}</span>
+                        </div>
+                        {sub.badge && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700">
+                            {sub.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

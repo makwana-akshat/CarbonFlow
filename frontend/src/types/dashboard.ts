@@ -2,7 +2,7 @@ export type UserRole = 'buyer' | 'supplier' | 'admin';
 
 export type DashboardState = 'success' | 'loading' | 'empty' | 'error';
 
-export type TabId = 'overview' | 'marketplace' | 'recommendations' | 'orders' | 'logistics' | 'maps' | 'ui-gallery' | 'requirements';
+export type TabId = 'overview' | 'marketplace' | 'recommendations' | 'orders' | 'logistics' | 'maps' | 'ui-gallery' | 'requirements' | 'carbon-impact';
 
 export interface TabItem {
   id: TabId;

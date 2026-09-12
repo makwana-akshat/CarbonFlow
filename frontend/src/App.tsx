@@ -157,7 +157,13 @@ export function App() {
   if (!clerkPubKey) {
     return (
       <Router>
-        <CarbonFlowShell isDemoMode={true} />
+        <Routes>
+          <Route
+            path="/app/carbon-impact"
+            element={<CarbonFlowShell isDemoMode={true} initialTab="carbon-impact" />}
+          />
+          <Route path="*" element={<CarbonFlowShell isDemoMode={true} />} />
+        </Routes>
       </Router>
     );
   }
@@ -179,6 +185,16 @@ export function App() {
             element={
               <AuthGuard>
                 <DashboardPage />
+              </AuthGuard>
+            }
+          />
+
+          {/* Carbon Impact Dedicated Route */}
+          <Route
+            path="/app/carbon-impact"
+            element={
+              <AuthGuard>
+                <DashboardPage initialTab="carbon-impact" />
               </AuthGuard>
             }
           />
