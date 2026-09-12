@@ -39,6 +39,31 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [viewState, setViewState] = useState<'success' | 'loading' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Removed useEffect from here, moving down
+
+  // Selected item for RequestModal
+  const [selectedSupplyListing, setSelectedSupplyListing] = useState<SupplyListing | null>(null);
+  const [selectedRequirement, setSelectedRequirement] = useState<DemandRequirement | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Filter State
+  const initialFilters: MarketplaceFilterState = {
+    searchQuery: '',
+    minQuantity: 0,
+    maxQuantity: 100000,
+    minPurity: 90,
+    minPrice: 0,
+    maxPrice: 10000,
+    maxDistance: 500,
+    selectedApplications: [],
+    availability: [],
+    physicalState: 'All',
+    verifiedOnly: false,
+    sortBy: 'purityDesc',
+  };
+
+  const [filterState, setFilterState] = useState<MarketplaceFilterState>(initialFilters);
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -85,13 +110,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         setApiListings(mappedListings);
 
         // Map requirements to frontend model
-        const mappedReqs: DemandRequirement[] = reqsRes.map((r: any) => ({
+        const reqsItems = Array.isArray(reqsRes) ? reqsRes : (reqsRes.items || []);
+        const mappedReqs: DemandRequirement[] = reqsItems.map((r: any) => ({
           id: r.id,
           buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
           industry: 'General Industrial',
-          application: r.required_grade,
-          location: 'Dynamic API Location',
-          minPurityRequired: 99.0,
+          application: r.required_grade || r.application || 'Unknown',
+          location: r.location || 'Dynamic API Location',
+          minPurityRequired: r.min_purity_required || 99.0,
           quantityNeeded: r.volume_needed,
           maxPricePerTon: r.target_price,
           maxDistanceKm: 1000,
@@ -106,30 +132,6 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     };
     fetchData();
   }, [getToken, filterState, currentPage]);
-
-  // Selected item for RequestModal
-  const [selectedSupplyListing, setSelectedSupplyListing] = useState<SupplyListing | null>(null);
-  const [selectedRequirement, setSelectedRequirement] = useState<DemandRequirement | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Filter State
-  const initialFilters: MarketplaceFilterState = {
-    searchQuery: '',
-    minQuantity: 0,
-    maxQuantity: 100000,
-    minPurity: 90,
-    minPrice: 0,
-    maxPrice: 10000,
-    maxDistance: 500,
-    selectedApplications: [],
-    availability: [],
-    physicalState: 'All',
-    verifiedOnly: false,
-    sortBy: 'purityDesc',
-  };
-
-  const [filterState, setFilterState] = useState<MarketplaceFilterState>(initialFilters);
-
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filterState.minPurity > 90) count++;

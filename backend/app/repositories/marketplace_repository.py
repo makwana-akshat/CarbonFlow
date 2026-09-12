@@ -23,7 +23,7 @@ class MarketplaceRepository:
         page: int = 1,
         limit: int = 20
     ) -> dict:
-        query = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role, organisation)", count="exact").eq("status", "active")
+        query = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role)", count="exact").eq("status", "active")
         
         if min_purity is not None:
             query = query.gte("purity_percentage", min_purity)
@@ -64,7 +64,7 @@ class MarketplaceRepository:
         }
 
     def get_listing_by_id(self, listing_id: str) -> Optional[dict]:
-        response = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role, organisation)").eq("id", listing_id).execute()
+        response = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role)").eq("id", listing_id).execute()
         return response.data[0] if response.data else None
 
     def create_listing(self, data: dict) -> dict:
@@ -85,7 +85,7 @@ class MarketplaceRepository:
         page: int = 1,
         limit: int = 20
     ) -> dict:
-        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role, organisation)", count="exact").eq("status", "active")
+        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)", count="exact").eq("status", "active")
         query = query.order("created_at", desc=True)
         
         start = (page - 1) * limit
@@ -101,11 +101,11 @@ class MarketplaceRepository:
         }
 
     def get_requests_by_buyer(self, buyer_id: str) -> List[dict]:
-        response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role, organisation)").eq("buyer_id", buyer_id).order("created_at", desc=True).execute()
+        response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)").eq("buyer_id", buyer_id).order("created_at", desc=True).execute()
         return response.data
 
     def get_request_by_id(self, request_id: str) -> Optional[dict]:
-        response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role, organisation)").eq("id", request_id).execute()
+        response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)").eq("id", request_id).execute()
         return response.data[0] if response.data else None
 
     def create_request(self, data: dict) -> dict:
