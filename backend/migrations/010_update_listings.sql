@@ -13,4 +13,5 @@ $$;
 
 -- Add notes column
 ALTER TABLE co2_listings
+
 ADD COLUMN IF NOT EXISTS notes TEXT;
