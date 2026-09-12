@@ -15,6 +15,15 @@ class CO2ListingBase(BaseModel):
 class CO2ListingCreate(CO2ListingBase):
     pass
 
+class CO2ListingUpdate(BaseModel):
+    facility_name: Optional[str] = None
+    co2_grade: Optional[str] = None
+    volume_tpa: Optional[float] = None
+    price_per_ton: Optional[float] = None
+    purity_percentage: Optional[float] = None
+    transport_modes: Optional[List[str]] = None
+    status: Optional[str] = None
+
 class CO2ListingResponse(CO2ListingBase):
     id: uuid.UUID
     supplier_id: uuid.UUID
@@ -24,17 +33,34 @@ class CO2ListingResponse(CO2ListingBase):
     model_config = ConfigDict(from_attributes=True)
 
 class CO2RequestBase(BaseModel):
-    required_grade: str
+    title: str
+    application: str
     volume_needed: float
+    min_purity_required: float
     target_price: float
-    status: str = "active"
+    location: str
+    required_by_date: Optional[str] = None
+    delivery_method: Optional[str] = None
+    status: str = "draft"
 
 class CO2RequestCreate(CO2RequestBase):
     pass
 
+class CO2RequestUpdate(BaseModel):
+    title: Optional[str] = None
+    application: Optional[str] = None
+    volume_needed: Optional[float] = None
+    min_purity_required: Optional[float] = None
+    target_price: Optional[float] = None
+    location: Optional[str] = None
+    required_by_date: Optional[str] = None
+    delivery_method: Optional[str] = None
+    status: Optional[str] = None
+
 class CO2RequestResponse(CO2RequestBase):
     id: uuid.UUID
     buyer_id: uuid.UUID
+    buyer_company_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

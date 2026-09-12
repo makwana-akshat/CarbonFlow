@@ -46,13 +46,29 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         const token = await getToken();
         if (!token) return;
 
+        // Build query params for supply listings
+        const params = new URLSearchParams();
+        if (filterState.minPurity > 90) params.append('min_purity', filterState.minPurity.toString());
+        if (filterState.maxPrice < 10000) params.append('max_price', filterState.maxPrice.toString());
+        if (filterState.minQuantity > 0) params.append('min_quantity', filterState.minQuantity.toString());
+        if (filterState.maxQuantity < 100000) params.append('max_quantity', filterState.maxQuantity.toString());
+        if (filterState.searchQuery) params.append('search_query', filterState.searchQuery);
+        if (filterState.verifiedOnly) params.append('verified_only', 'true');
+        if (filterState.sortBy) params.append('sort_by', filterState.sortBy);
+        params.append('page', currentPage.toString());
+        params.append('limit', itemsPerPage.toString());
+
         const [listingsRes, reqsRes] = await Promise.all([
-          getListings(token),
+          getListings(token, params),
           getAllRequirements(token)
         ]);
 
+        // Backend now returns { items, total, page, limit }
+        const listingsItems = listingsRes.items || [];
+        setTotalSupplyCount(listingsRes.total || 0);
+
         // Map listings to frontend model
-        const mappedListings: SupplyListing[] = listingsRes.map((l) => ({
+        const mappedListings: SupplyListing[] = listingsItems.map((l: any) => ({
           id: l.id,
           companyName: (l.users?.first_name ? `${l.users.first_name} ${l.users.last_name || ''}`.trim() : 'Unknown Supplier'),
           facilityType: l.facility_name,
@@ -66,10 +82,10 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           availabilityWindow: 'Immediate',
           isVerified: true,
         }));
-        if (mappedListings.length > 0) setApiListings(mappedListings);
+        setApiListings(mappedListings);
 
         // Map requirements to frontend model
-        const mappedReqs: DemandRequirement[] = reqsRes.map((r) => ({
+        const mappedReqs: DemandRequirement[] = reqsRes.map((r: any) => ({
           id: r.id,
           buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
           industry: 'General Industrial',
@@ -89,7 +105,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       }
     };
     fetchData();
-  }, [getToken]);
+  }, [getToken, filterState, currentPage]);
 
   // Selected item for RequestModal
   const [selectedSupplyListing, setSelectedSupplyListing] = useState<SupplyListing | null>(null);
@@ -141,37 +157,10 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Filtered Supply Listings
+  // Filtered Supply Listings (Now handled by backend)
   const filteredSupply = useMemo(() => {
-    return apiListings.filter((item) => {
-      if (filterState.searchQuery) {
-        const q = filterState.searchQuery.toLowerCase();
-        const matches =
-          item.companyName.toLowerCase().includes(q) ||
-          item.facilityType.toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q) ||
-          item.sourceType.toLowerCase().includes(q);
-        if (!matches) return false;
-      }
-      if (item.purity < filterState.minPurity) return false;
-      if (filterState.minQuantity > 0 && item.availableQuantity < filterState.minQuantity) return false;
-      if (filterState.maxQuantity < 100000 && item.availableQuantity > filterState.maxQuantity) return false;
-      if (filterState.minPrice > 0 && item.pricePerTon < filterState.minPrice) return false;
-      if (filterState.maxPrice < 10000 && item.pricePerTon > filterState.maxPrice) return false;
-      if (item.distanceKm > filterState.maxDistance) return false;
-      if (filterState.physicalState !== 'All' && item.physicalState !== filterState.physicalState) return false;
-      if (filterState.verifiedOnly && !item.isVerified) return false;
-
-      return true;
-    }).sort((a, b) => {
-      if (filterState.sortBy === 'purityDesc') return b.purity - a.purity;
-      if (filterState.sortBy === 'priceAsc') return a.pricePerTon - b.pricePerTon;
-      if (filterState.sortBy === 'priceDesc') return b.pricePerTon - a.pricePerTon;
-      if (filterState.sortBy === 'distanceAsc') return a.distanceKm - b.distanceKm;
-      if (filterState.sortBy === 'quantityDesc') return b.availableQuantity - a.availableQuantity;
-      return 0;
-    });
-  }, [filterState]);
+    return apiListings;
+  }, [apiListings]);
 
   // Filtered Demand Requirements
   const filteredDemand = useMemo(() => {
@@ -209,14 +198,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     });
   }, [filterState]);
 
-  const totalResults = mode === 'supply' ? filteredSupply.length : filteredDemand.length;
+  const [totalSupplyCount, setTotalSupplyCount] = useState(0);
+  const totalResults = mode === 'supply' ? totalSupplyCount : filteredDemand.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / itemsPerPage));
 
   // Current page slices
   const pagedSupply = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredSupply.slice(start, start + itemsPerPage);
-  }, [filteredSupply, currentPage]);
+    return filteredSupply; // Already paginated from backend
+  }, [filteredSupply]);
 
   const pagedDemand = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;

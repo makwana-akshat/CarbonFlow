@@ -35,8 +35,9 @@ export interface CO2Request {
   };
 }
 
-export const getListings = async (token: string | null): Promise<CO2Listing[]> => {
-  return fetchWithAuth('/marketplace/listings', token);
+export const getListings = async (token: string | null, params?: URLSearchParams): Promise<any> => {
+  const query = params ? `?${params.toString()}` : '';
+  return fetchWithAuth(`/marketplace/listings${query}`, token);
 };
 
 export const createListing = async (token: string | null, data: Partial<CO2Listing>): Promise<CO2Listing> => {
@@ -46,17 +47,34 @@ export const createListing = async (token: string | null, data: Partial<CO2Listi
   });
 };
 
-export const getAllRequirements = async (token: string | null): Promise<CO2Request[]> => {
+export const getAllRequirements = async (token: string | null): Promise<any> => {
   return fetchWithAuth('/marketplace/requirements', token);
 };
 
-export const getMyRequirements = async (token: string | null): Promise<CO2Request[]> => {
+export const getMyRequirements = async (token: string | null): Promise<any[]> => {
   return fetchWithAuth('/marketplace/requirements/me', token);
 };
 
-export const createRequirement = async (token: string | null, data: Partial<CO2Request>): Promise<CO2Request> => {
+export const getRequirementById = async (token: string | null, id: string): Promise<any> => {
+  return fetchWithAuth(`/marketplace/requirements/${id}`, token);
+};
+
+export const createRequirement = async (token: string | null, data: any): Promise<any> => {
   return fetchWithAuth('/marketplace/requirements', token, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+};
+
+export const updateRequirement = async (token: string | null, id: string, data: any): Promise<any> => {
+  return fetchWithAuth(`/marketplace/requirements/${id}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+};
+
+export const deleteRequirement = async (token: string | null, id: string): Promise<void> => {
+  await fetchWithAuth(`/marketplace/requirements/${id}`, token, {
+    method: 'DELETE',
   });
 };

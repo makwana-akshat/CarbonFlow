@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Table, type Column } from '../ui/DataDisplay';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -7,7 +7,7 @@ import { PillTabNav, type PillTab } from '../ui/Navigation';
 import { Modal, Dropdown, type DropdownItem } from '../ui/Overlays';
 import { MoreVertical, Calendar, MapPin, Gauge } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
-import { getMyRequirements } from '../../services/marketplaceApi';
+import { getMyRequirements, createRequirement, updateRequirement, deleteRequirement } from '../../services/marketplaceApi';
 
 export interface BuyerRequirementItem {
   id: string;
@@ -25,84 +25,6 @@ export interface BuyerRequirementItem {
   notes?: string;
 }
 
-const INITIAL_REQUIREMENTS: BuyerRequirementItem[] = [
-  {
-    id: 'REQ-2026-01',
-    title: 'Precast Concrete Curing Feedstock',
-    volumeTonnes: 500,
-    minPurity: 98.0,
-    location: 'Ahmedabad, Gujarat',
-    application: 'Building Materials',
-    maxPricePerTon: 4800,
-    status: 'matched',
-    matchesCount: 3,
-    postedDate: 'Jun 02, 2026',
-    requiredByDate: 'Jul 15, 2026',
-    deliveryMethod: 'Cryogenic Truck',
-    notes: 'Requires ISO-14064 direct injection certification for concrete curing acceleration.',
-  },
-  {
-    id: 'REQ-2026-02',
-    title: 'Dahej Methanol Synthesis Carbon Stream',
-    volumeTonnes: 2400,
-    minPurity: 99.5,
-    location: 'Dahej SEZ, Gujarat',
-    application: 'Synthetic Fuels',
-    maxPricePerTon: 5600,
-    status: 'awaiting_matches',
-    matchesCount: 0,
-    postedDate: 'Jun 08, 2026',
-    requiredByDate: 'Aug 01, 2026',
-    deliveryMethod: 'Pipeline Interconnect',
-    notes: 'Continuous flow required at 35 bar minimum pipeline pressure.',
-  },
-  {
-    id: 'REQ-2026-03',
-    title: 'Supercritical CO₂ Extraction Batch',
-    volumeTonnes: 120,
-    minPurity: 99.9,
-    location: 'Surat Chemical Cluster, Gujarat',
-    application: 'Food & Beverage',
-    maxPricePerTon: 7200,
-    status: 'matched',
-    matchesCount: 2,
-    postedDate: 'May 24, 2026',
-    requiredByDate: 'Jun 30, 2026',
-    deliveryMethod: 'ISO Tank Container',
-    notes: 'Food-grade E290 certified only. Heavy metal traces < 0.1 ppm.',
-  },
-  {
-    id: 'REQ-2026-04',
-    title: 'Enhanced Oil Recovery (EOR) Pilot Loop',
-    volumeTonnes: 15000,
-    minPurity: 95.0,
-    location: 'Ankleshwar Basin, Gujarat',
-    application: 'EOR Injection',
-    maxPricePerTon: 3600,
-    status: 'draft',
-    matchesCount: 0,
-    postedDate: 'Jun 11, 2026',
-    requiredByDate: 'Sep 01, 2026',
-    deliveryMethod: 'Dedicated Pipeline Trunk',
-    notes: 'Phase 1 reservoir pressure sweep test.',
-  },
-  {
-    id: 'REQ-2026-05',
-    title: 'Calcium Carbonate Mineralization Unit',
-    volumeTonnes: 850,
-    minPurity: 97.0,
-    location: 'Vadodara Industrial Corridor',
-    application: 'Building Materials',
-    maxPricePerTon: 4200,
-    status: 'closed',
-    matchesCount: 4,
-    postedDate: 'Apr 18, 2026',
-    requiredByDate: 'May 20, 2026',
-    deliveryMethod: 'Pressurized Tube Trailer',
-    notes: 'Procurement completed via Veritas Carbon Terminals contract.',
-  },
-];
-
 interface MyRequirementsViewProps {
   onNavigateToRecommendations: (requirementId?: string) => void;
   onOpenMarketplace?: () => void;
@@ -112,40 +34,48 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   onNavigateToRecommendations,
   onOpenMarketplace: _onOpenMarketplace,
 }) => {
-  const [requirements, setRequirements] = useState<BuyerRequirementItem[]>(INITIAL_REQUIREMENTS);
+  const [requirements, setRequirements] = useState<BuyerRequirementItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { getToken } = useAuth();
+  
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-        const reqs = await getMyRequirements(token);
-        const mapped: BuyerRequirementItem[] = reqs.map(r => ({
-          id: r.id,
-          title: `${r.required_grade} Requirement`,
-          volumeTonnes: r.volume_needed,
-          minPurity: 99.0,
-          location: 'Dynamic API Location',
-          application: r.required_grade,
-          maxPricePerTon: r.target_price,
-          status: (r.status === 'active' ? 'awaiting_matches' : r.status) as any,
-          matchesCount: Math.floor(Math.random() * 3),
-          postedDate: 'Today',
-          requiredByDate: 'Next Month',
-          deliveryMethod: 'API Delivery',
-        }));
-        if (mapped.length > 0) {
-          setRequirements(mapped);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = await getToken();
+      if (!token) return;
+      const reqs = await getMyRequirements(token);
+      
+      const mapped: BuyerRequirementItem[] = reqs.map((r: any) => ({
+        id: r.id,
+        title: r.title || `${r.application || 'Industrial'} Requirement`,
+        volumeTonnes: r.volume_needed || 0,
+        minPurity: r.min_purity_required || 99.0,
+        location: r.location || 'Dynamic API Location',
+        application: r.application || 'General Industrial',
+        maxPricePerTon: r.target_price || 0,
+        status: (r.status === 'active' || r.status === 'awaiting_matches' ? 'awaiting_matches' : 
+                 r.status === 'cancelled' ? 'closed' : r.status) as any,
+        matchesCount: Math.floor(Math.random() * 3), // Still mocked for now (Phase 8 handles matches)
+        postedDate: r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Today',
+        requiredByDate: r.required_by_date || 'Next Month',
+        deliveryMethod: r.delivery_method || 'API Delivery',
+      })).filter(r => r.status !== 'closed'); // Hide closed for now, or keep them if you want
+      
+      setRequirements(mapped);
+    } catch (err) {
+      console.error(err);
+      showToast('Error loading requirements.');
+    } finally {
+      setIsLoading(false);
+    }
   }, [getToken]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // New Requirement Modal state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -190,54 +120,49 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   }, [requirements, statusFilter]);
 
   // Actions handlers
-  const handleActionSelect = (req: BuyerRequirementItem, actionId: string) => {
-    switch (actionId) {
-      case 'publish':
-        setRequirements((prev) =>
-          prev.map((item) =>
-            item.id === req.id
-              ? { ...item, status: 'awaiting_matches', matchesCount: 1 }
-              : item
-          )
-        );
-        showToast(`Published "${req.title}". Match engine active.`);
-        break;
-      case 'pause':
-        setRequirements((prev) =>
-          prev.map((item) =>
-            item.id === req.id ? { ...item, status: 'draft' } : item
-          )
-        );
-        showToast(`Paused matching for "${req.title}".`);
-        break;
-      case 'close':
-        setRequirements((prev) =>
-          prev.map((item) =>
-            item.id === req.id ? { ...item, status: 'closed' } : item
-          )
-        );
-        showToast(`Closed requirement "${req.title}".`);
-        break;
-      case 'reopen':
-        setRequirements((prev) =>
-          prev.map((item) =>
-            item.id === req.id ? { ...item, status: 'awaiting_matches' } : item
-          )
-        );
-        showToast(`Reopened "${req.title}".`);
-        break;
-      case 'edit':
-        setSelectedRequirement(req);
-        break;
-      case 'view_matches':
-        onNavigateToRecommendations(req.id);
-        break;
-      case 'delete':
-        setRequirements((prev) => prev.filter((item) => item.id !== req.id));
-        showToast(`Deleted "${req.title}".`);
-        break;
-      default:
-        break;
+  const handleActionSelect = async (req: BuyerRequirementItem, actionId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      switch (actionId) {
+        case 'publish':
+          await updateRequirement(token, req.id, { status: 'active' });
+          await fetchData();
+          showToast(`Published "${req.title}". Match engine active.`);
+          break;
+        case 'pause':
+          await updateRequirement(token, req.id, { status: 'draft' });
+          await fetchData();
+          showToast(`Paused matching for "${req.title}".`);
+          break;
+        case 'close':
+          await updateRequirement(token, req.id, { status: 'cancelled' });
+          await fetchData();
+          showToast(`Closed requirement "${req.title}".`);
+          break;
+        case 'reopen':
+          await updateRequirement(token, req.id, { status: 'active' });
+          await fetchData();
+          showToast(`Reopened "${req.title}".`);
+          break;
+        case 'edit':
+          setSelectedRequirement(req);
+          break;
+        case 'view_matches':
+          onNavigateToRecommendations(req.id);
+          break;
+        case 'delete':
+          await deleteRequirement(token, req.id);
+          await fetchData();
+          showToast(`Deleted "${req.title}".`);
+          break;
+        default:
+          break;
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Action failed.');
     }
   };
 
@@ -273,36 +198,44 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
     }
   };
 
-  const handleCreateRequirement = (targetStatus: 'draft' | 'awaiting_matches') => {
+  const handleCreateRequirement = async (targetStatus: 'draft' | 'awaiting_matches') => {
     if (!newTitle.trim()) {
       showToast('Please enter a requirement name.');
       return;
     }
+    
+    try {
+      const token = await getToken();
+      if (!token) return;
 
-    const created: BuyerRequirementItem = {
-      id: `REQ-${Date.now().toString().slice(-4)}`,
-      title: newTitle.trim(),
-      volumeTonnes: Number(newVolume) || 500,
-      minPurity: Number(newPurity) || 98.0,
-      location: newLocation || 'Gujarat',
-      application: newApplication || 'General Industrial',
-      maxPricePerTon: Number(newPrice) || 4500,
-      status: targetStatus,
-      matchesCount: targetStatus === 'awaiting_matches' ? 2 : 0,
-      postedDate: 'Today',
-      requiredByDate: newRequiredDate,
-      deliveryMethod: newDelivery,
-    };
+      const payload = {
+        title: newTitle.trim(),
+        volume_needed: Number(newVolume) || 500,
+        min_purity_required: Number(newPurity) || 98.0,
+        location: newLocation || 'Gujarat',
+        application: newApplication || 'General Industrial',
+        target_price: Number(newPrice) || 4500,
+        status: targetStatus === 'awaiting_matches' ? 'active' : 'draft',
+        required_by_date: newRequiredDate,
+        delivery_method: newDelivery,
+      };
 
-    setRequirements((prev) => [created, ...prev]);
-    setIsNewModalOpen(false);
-    setNewTitle('');
-    setNewVolume('');
-    showToast(
-      targetStatus === 'draft'
-        ? 'Requirement saved as draft.'
-        : 'Requirement published to regional matching network!'
-    );
+      await createRequirement(token, payload);
+      
+      setIsNewModalOpen(false);
+      setNewTitle('');
+      setNewVolume('');
+      showToast(
+        targetStatus === 'draft'
+          ? 'Requirement saved as draft.'
+          : 'Requirement published to regional matching network!'
+      );
+      
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to create requirement.');
+    }
   };
 
   // Columns for desktop <Table>

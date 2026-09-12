@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { UserRole, DashboardState, TabId, FilterState, RecommendationItem } from '../../types/dashboard';
 import { RECOMMENDATIONS_DATA } from '../../data/mockData';
 import { CarbonSidebar } from './CarbonSidebar';
@@ -56,7 +56,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     { id: 'ORD-8914', supplier: 'Veritas Carbon Terminals', volume: '22,000 t', mode: 'Marine Barge', status: 'Loading at Hub', eta: '3 days', progress: 30 }
   ]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeTab === 'orders') {
       const fetchOrders = async () => {
         try {
@@ -95,7 +95,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     sortBy: 'match',
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchRecs = async () => {
       try {
         const token = await getToken();
