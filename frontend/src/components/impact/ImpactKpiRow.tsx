@@ -1,9 +1,38 @@
 import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { TrendingUp, CheckCircle2, ShieldCheck, Factory } from 'lucide-react';
+import { useAuth } from '@clerk/clerk-react';
+import { getImpactMetrics } from '../../services/impactApi';
 
 export const ImpactKpiRow: React.FC = () => {
   const { overviewMetrics } = useCarbonImpact();
+  
+  const { getToken } = useAuth();
+  const [metrics, setMetrics] = React.useState(overviewMetrics);
+
+  React.useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const apiData = await getImpactMetrics(token);
+        if (apiData) {
+          const updated = [...overviewMetrics];
+          // Override the "Utilized" (index 3) metric with real backend data
+          updated[3] = {
+            ...updated[3],
+            formattedTonnes: apiData.total_abated.replace(' t', ''),
+            trendText: `ESG Score: ${apiData.esg_score}`,
+            subtext: `Active Projects: ${apiData.active_projects}`
+          };
+          setMetrics(updated);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchMetrics();
+  }, [getToken, overviewMetrics]);
 
   const iconMap: Record<string, React.ReactNode> = {
     captured: <Factory className="w-4 h-4 text-[var(--accent-primary)]" />,
@@ -16,7 +45,7 @@ export const ImpactKpiRow: React.FC = () => {
     <div className="space-y-2">
       {/* 4-Metric Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {overviewMetrics.map((metric) => (
+        {metrics.map((metric) => (
           <div
             key={metric.id}
             className="p-4 sm:p-5 rounded-[var(--radius-card)] bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col justify-between space-y-3 hover:border-[var(--ink)]/20 transition-all group"

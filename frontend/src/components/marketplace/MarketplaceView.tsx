@@ -7,6 +7,8 @@ import { CO2ListingCard } from '../ui/CO2ListingCard';
 import { RequirementCard } from './RequirementCard';
 import { RequestModal } from './RequestModal';
 import { SUPPLY_LISTINGS, DEMAND_REQUIREMENTS } from '../../data/marketplaceData';
+import { useAuth } from '@clerk/clerk-react';
+import { getListings, getAllRequirements } from '../../services/marketplaceApi';
 import type {
   MarketplaceMode,
   MarketplaceFilterState,
@@ -29,9 +31,65 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  const { getToken } = useAuth();
+  const [apiListings, setApiListings] = useState<SupplyListing[]>(SUPPLY_LISTINGS);
+  const [apiRequirements, setApiRequirements] = useState<DemandRequirement[]>(DEMAND_REQUIREMENTS);
+
   // View state simulation
   const [viewState, setViewState] = useState<'success' | 'loading' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setViewState('loading');
+        const token = await getToken();
+        if (!token) return;
+
+        const [listingsRes, reqsRes] = await Promise.all([
+          getListings(token),
+          getAllRequirements(token)
+        ]);
+
+        // Map listings to frontend model
+        const mappedListings: SupplyListing[] = listingsRes.map((l) => ({
+          id: l.id,
+          companyName: (l.users?.first_name ? `${l.users.first_name} ${l.users.last_name || ''}`.trim() : 'Unknown Supplier'),
+          facilityType: l.facility_name,
+          location: 'Dynamic API Location',
+          sourceType: 'Mixed',
+          purity: l.purity_percentage,
+          physicalState: l.transport_modes.includes('Pipeline') ? 'Gas' : 'Liquefied',
+          availableQuantity: l.volume_tpa,
+          pricePerTon: l.price_per_ton,
+          distanceKm: Math.floor(Math.random() * 200),
+          availabilityWindow: 'Immediate',
+          isVerified: true,
+        }));
+        if (mappedListings.length > 0) setApiListings(mappedListings);
+
+        // Map requirements to frontend model
+        const mappedReqs: DemandRequirement[] = reqsRes.map((r) => ({
+          id: r.id,
+          buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
+          industry: 'General Industrial',
+          application: r.required_grade,
+          location: 'Dynamic API Location',
+          minPurityRequired: 99.0,
+          quantityNeeded: r.volume_needed,
+          maxPricePerTon: r.target_price,
+          maxDistanceKm: 1000,
+        }));
+        if (mappedReqs.length > 0) setApiRequirements(mappedReqs);
+        
+        setViewState('success');
+      } catch (err) {
+        console.error(err);
+        setViewState('error');
+      }
+    };
+    fetchData();
+  }, [getToken]);
 
   // Selected item for RequestModal
   const [selectedSupplyListing, setSelectedSupplyListing] = useState<SupplyListing | null>(null);
@@ -85,7 +143,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
   // Filtered Supply Listings
   const filteredSupply = useMemo(() => {
-    return SUPPLY_LISTINGS.filter((item) => {
+    return apiListings.filter((item) => {
       if (filterState.searchQuery) {
         const q = filterState.searchQuery.toLowerCase();
         const matches =
@@ -117,7 +175,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
   // Filtered Demand Requirements
   const filteredDemand = useMemo(() => {
-    return DEMAND_REQUIREMENTS.filter((item) => {
+    return apiRequirements.filter((item) => {
       if (filterState.searchQuery) {
         const q = filterState.searchQuery.toLowerCase();
         const matches =

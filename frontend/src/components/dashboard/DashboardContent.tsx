@@ -17,6 +17,8 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import type { UserRole, DashboardState } from '../../types/dashboard';
+import { useAuth } from '@clerk/clerk-react';
+import { getDashboardSummary } from '../../services/dashboardApi';
 
 interface DashboardContentProps {
   userRole: UserRole;
@@ -52,6 +54,24 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('month');
   const [chartPeriod, setChartPeriod] = useState<'Last 30 Days' | 'Last 90 Days' | 'Last Year'>('Last Year');
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(6); // default to a recent point
+  
+  const { getToken } = useAuth();
+  const [apiSummary, setApiSummary] = useState<any>(null);
+
+  React.useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          const data = await getDashboardSummary(token);
+          setApiSummary(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchSummary();
+  }, [getToken, userRole]);
 
   // Dynamic organization name based on active persona
   const activeOrgName = orgName || {
@@ -69,6 +89,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       : selectedPeriod === 'month' 
       ? 'last month' 
       : 'last year';
+
+    if (apiSummary?.kpis) {
+      return apiSummary.kpis.map((kpi: any) => ({
+        id: kpi.id,
+        label: kpi.label,
+        value: kpi.value,
+        trend: kpi.trend,
+        caption: kpi.period
+      }));
+    }
 
     if (userRole === 'buyer') {
       return [

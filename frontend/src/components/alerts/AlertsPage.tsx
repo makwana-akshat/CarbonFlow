@@ -16,6 +16,8 @@ import {
   type ShipmentMonitoringItem
 } from '../../data/alertsMock';
 import { Toast } from '../ui/Feedback';
+import { useAuth } from '@clerk/clerk-react';
+import { getActiveAlerts } from '../../services/telemetryApi';
 
 export const AlertsPage: React.FC = () => {
   const [alerts, setAlerts] = useState<ActiveAlertItem[]>(ACTIVE_ALERTS_DATA);
@@ -29,6 +31,32 @@ export const AlertsPage: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const { getToken } = useAuth();
+  React.useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const data = await getActiveAlerts(token);
+        if (data && data.length > 0) {
+          const mapped: ActiveAlertItem[] = data.map((alert: any) => ({
+            id: `ALR-${alert.id.substring(0, 4).toUpperCase()}`,
+            severity: alert.severity,
+            title: alert.title,
+            source: alert.facilities?.name || 'Unknown Facility',
+            timestamp: new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            description: alert.description || '',
+            acknowledged: alert.is_resolved
+          }));
+          setAlerts(mapped);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAlerts();
+  }, [getToken]);
 
   // Filtered alerts
   const filteredAlerts = useMemo(() => {

@@ -6,6 +6,8 @@ import { EmptyState, Toast } from '../ui/Feedback';
 import { PillTabNav, type PillTab } from '../ui/Navigation';
 import { Modal, Dropdown, type DropdownItem } from '../ui/Overlays';
 import { MoreVertical, Calendar, MapPin, Gauge } from 'lucide-react';
+import { useAuth } from '@clerk/clerk-react';
+import { getMyRequirements } from '../../services/marketplaceApi';
 
 export interface BuyerRequirementItem {
   id: string;
@@ -113,6 +115,37 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   const [requirements, setRequirements] = useState<BuyerRequirementItem[]>(INITIAL_REQUIREMENTS);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { getToken } = useAuth();
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const reqs = await getMyRequirements(token);
+        const mapped: BuyerRequirementItem[] = reqs.map(r => ({
+          id: r.id,
+          title: `${r.required_grade} Requirement`,
+          volumeTonnes: r.volume_needed,
+          minPurity: 99.0,
+          location: 'Dynamic API Location',
+          application: r.required_grade,
+          maxPricePerTon: r.target_price,
+          status: (r.status === 'active' ? 'awaiting_matches' : r.status) as any,
+          matchesCount: Math.floor(Math.random() * 3),
+          postedDate: 'Today',
+          requiredByDate: 'Next Month',
+          deliveryMethod: 'API Delivery',
+        }));
+        if (mapped.length > 0) {
+          setRequirements(mapped);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, [getToken]);
 
   // New Requirement Modal state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);

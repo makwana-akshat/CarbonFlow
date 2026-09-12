@@ -19,6 +19,8 @@ import { CarbonImpactPage } from '../impact/CarbonImpactPage';
 import { AlertsPage } from '../alerts/AlertsPage';
 import { AuditContractsPage } from '../contracts/AuditContractsPage';
 import { AssistantWidget } from '../assistant/AssistantWidget';
+import { useAuth } from '@clerk/clerk-react';
+import { getActiveOrders } from '../../services/dashboardApi';
 
 export interface CarbonFlowShellProps {
   appUser?: {
@@ -42,10 +44,43 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   const [dashboardState, setDashboardState] = useState<DashboardState>('success');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Selected item for slide-over drawer
   const [selectedRecommendation, setSelectedRecommendation] = useState<RecommendationItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  const { getToken } = useAuth();
+  const [activeOrders, setActiveOrders] = useState<any[]>([
+    { id: 'ORD-8921', supplier: 'Nordic Cryo Carbon', volume: '8,500 t', mode: 'ISO Rail', status: 'In Transit', eta: 'Tomorrow 08:30', progress: 75 },
+    { id: 'ORD-8919', supplier: 'AeroCapture Synthetics', volume: '14,200 t', mode: 'Pipeline Trunk', status: 'Continuous Flow', eta: 'Active Telemetry', progress: 100 },
+    { id: 'ORD-8914', supplier: 'Veritas Carbon Terminals', volume: '22,000 t', mode: 'Marine Barge', status: 'Loading at Hub', eta: '3 days', progress: 30 }
+  ]);
+
+  React.useEffect(() => {
+    if (activeTab === 'orders') {
+      const fetchOrders = async () => {
+        try {
+          const token = await getToken();
+          if (!token) return;
+          const res = await getActiveOrders(token);
+          if (res && res.length > 0) {
+            const mapped = res.map(o => ({
+              id: `ORD-${o.id.substring(0,4).toUpperCase()}`,
+              supplier: o.supplier ? `${o.supplier.first_name} ${o.supplier.last_name || ''}`.trim() : (o.buyer ? `${o.buyer.first_name} ${o.buyer.last_name || ''}`.trim() : 'Unknown'),
+              volume: `${o.volume.toLocaleString()} t`,
+              mode: o.transport_mode,
+              status: o.status,
+              eta: o.eta ? new Date(o.eta).toLocaleDateString() : 'Active Telemetry',
+              progress: 50
+            }));
+            setActiveOrders(mapped);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchOrders();
+    }
+  }, [activeTab, getToken]);
 
   // Search and Filter State
   const [filterState, setFilterState] = useState<FilterState>({
@@ -332,11 +367,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                         </div>
                       </div>
                       <div className="divide-y divide-[var(--border-subtle)]">
-                        {[
-                          { id: 'ORD-8921', supplier: 'Nordic Cryo Carbon', volume: '8,500 t', mode: 'ISO Rail', status: 'In Transit', eta: 'Tomorrow 08:30', progress: 75 },
-                          { id: 'ORD-8919', supplier: 'AeroCapture Synthetics', volume: '14,200 t', mode: 'Pipeline Trunk', status: 'Continuous Flow', eta: 'Active Telemetry', progress: 100 },
-                          { id: 'ORD-8914', supplier: 'Veritas Carbon Terminals', volume: '22,000 t', mode: 'Marine Barge', status: 'Loading at Hub', eta: '3 days', progress: 30 }
-                        ].map((order) => (
+                        {activeOrders.map((order) => (
                           <div key={order.id} className="py-[var(--space-row)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
