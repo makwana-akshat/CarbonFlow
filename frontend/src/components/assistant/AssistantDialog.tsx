@@ -130,7 +130,17 @@ export const AssistantDialog: React.FC<AssistantDialogProps> = ({
       setTimeout(() => {
         setOrbState('idle');
       }, 2200);
-    }, 850);
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      const errorMsg: ChatMessageItem = { 
+        id: `ast-${Date.now()}`,
+        text: "I encountered an error connecting to the AI service.", 
+        sender: 'assistant', 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      setOrbState('idle');
+    }
   };
 
   const handleClearChat = () => {

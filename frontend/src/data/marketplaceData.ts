@@ -19,6 +19,7 @@ export const SUPPLY_LISTINGS: SupplyListing[] = [
     deliveryMethods: ['ISO Rail Tanker', 'Cryogenic Truck']
   },
   {
+
     id: 'SUP-02',
     companyName: 'Gujarat Alkalis & Chemicals Ltd',
     facilityType: 'Chlor-Alkali High-Purity CO2 Scrubbing Plant',
