@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User,
   Building2,
@@ -9,44 +10,48 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
-  Sliders
+  Sliders,
+  Loader2
 } from 'lucide-react';
 import { Input, Select, Toggle } from '../ui/FormControls';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useAppStore } from '../../store/useAppStore';
 import type { UserRole } from '../../types/dashboard';
+import { fetchWithAuth } from '../../services/api';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { userRole, setUserRole, showToast } = useAppStore();
+
+  const queryClient = useQueryClient();
+
+  const { data: dbUser, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return null;
+      return fetchWithAuth('/users/me', token);
+    },
+    enabled: !!user,
+  });
 
   // Profile Form State
   const [profileData, setProfileData] = useState({
-    name: user?.fullName || 'Alexander Wright',
-    email: user?.primaryEmailAddress?.emailAddress || 'alexander.wright@nordiccarbon.io',
-    phone: '+31 20 555 0192',
-    jobTitle: 'Head of Industrial Decarbonization & Feedstock Procurement',
+    name: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
   });
-
-  // Keep synced if Clerk user loads
-  useEffect(() => {
-    if (user) {
-      setProfileData((prev) => ({
-        ...prev,
-        name: user.fullName || prev.name,
-        email: user.primaryEmailAddress?.emailAddress || prev.email,
-      }));
-    }
-  }, [user]);
 
   // Organization Form State
   const [orgData, setOrgData] = useState({
-    companyName: 'Apex Chemicals & Clean Synthesis BV',
+    companyName: '',
     industry: 'chemicals',
-    facilityLocation: 'Rotterdam Maasvlakte Industrial Cluster, NL',
-    co2Capacity: '45,000 t/year',
-    verificationStatus: 'verified',
+    facilityLocation: '',
+    co2Capacity: '',
+    verificationStatus: 'unverified',
   });
 
   // Notification Preferences State
@@ -64,24 +69,94 @@ export const SettingsPage: React.FC = () => {
     setSelectedRole(userRole);
   }, [userRole]);
 
-  const [isSaving, setIsSaving] = useState(false);
+  // Keep synced if Clerk user or DB user loads
+  useEffect(() => {
+    if (dbUser || user) {
+      setProfileData({
+        name: dbUser?.first_name ? `${dbUser.first_name} ${dbUser.last_name || ''}`.trim() : user?.fullName || '',
+        email: dbUser?.email || user?.primaryEmailAddress?.emailAddress || '',
+        phone: dbUser?.phone || '',
+        jobTitle: dbUser?.job_title || '',
+      });
+
+      if (dbUser) {
+        setOrgData({
+          companyName: dbUser.company_name || '',
+          industry: dbUser.industry || 'chemicals',
+          facilityLocation: dbUser.facility_location || '',
+          co2Capacity: dbUser.co2_capacity || '',
+          verificationStatus: dbUser.is_verified ? 'verified' : 'unverified',
+        });
+
+        setNotifications({
+          priceAlerts: dbUser.notif_price_alerts ?? true,
+          supplyAlerts: dbUser.notif_supply_alerts ?? true,
+          orderUpdates: dbUser.notif_order_updates ?? true,
+          contractNotifications: dbUser.notif_contract_notifs ?? false,
+        });
+
+        if (dbUser.role) {
+          setSelectedRole(dbUser.role as UserRole);
+          if (dbUser.role !== userRole) {
+            setUserRole(dbUser.role as UserRole);
+          }
+        }
+      }
+    }
+  }, [user, dbUser]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (updatePayload: any) => {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      return fetchWithAuth('/users/me', token, {
+        method: 'PATCH',
+        body: JSON.stringify(updatePayload)
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      showToast('Settings saved successfully');
+      setHasSaved(true);
+      setTimeout(() => setHasSaved(false), 4000);
+    },
+    onError: (error) => {
+      showToast('Failed to save settings');
+      console.error(error);
+    }
+  });
+
   const [hasSaved, setHasSaved] = useState(false);
 
   const handleSaveAll = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setIsSaving(true);
 
-    // Apply role change to global store
+    const nameParts = profileData.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ');
+
+    const payload = {
+      first_name: firstName,
+      last_name: lastName,
+      phone: profileData.phone,
+      job_title: profileData.jobTitle,
+      company_name: orgData.companyName,
+      industry: orgData.industry,
+      co2_capacity: orgData.co2Capacity,
+      facility_location: orgData.facilityLocation,
+      notif_price_alerts: notifications.priceAlerts,
+      notif_supply_alerts: notifications.supplyAlerts,
+      notif_order_updates: notifications.orderUpdates,
+      notif_contract_notifs: notifications.contractNotifications,
+      role: selectedRole,
+    };
+
+    updateMutation.mutate(payload);
+
+    // Apply role change to global store immediately for UI sync
     if (selectedRole !== userRole) {
       setUserRole(selectedRole);
     }
-
-    setTimeout(() => {
-      setIsSaving(false);
-      setHasSaved(true);
-      showToast('Settings saved successfully');
-      setTimeout(() => setHasSaved(false), 4000);
-    }, 450);
   };
 
   const industryOptions = [
@@ -123,16 +198,22 @@ export const SettingsPage: React.FC = () => {
             variant="primary"
             size="md"
             onClick={handleSaveAll}
-            disabled={isSaving}
+            disabled={updateMutation.isPending || isLoadingUser}
             className="shadow-xs"
           >
             <Save className="w-4 h-4 mr-1.5" />
-            {isSaving ? 'Saving Changes...' : 'Save Changes'}
+            {updateMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
           </Button>
         </div>
       </div>
 
-      <form onSubmit={handleSaveAll} className="space-y-6">
+      {isLoadingUser ? (
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+          <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
+          <p className="text-[14px] text-[var(--text-secondary-accessible)]">Loading your workspace profile...</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSaveAll} className="space-y-6">
         {/* 1. Profile Card */}
         <section className="bg-[var(--surface-card)] rounded-[var(--radius-card)] p-6 sm:p-7 border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)]">
@@ -244,10 +325,17 @@ export const SettingsPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <Badge variant="outline-success">
-              <CheckCircle2 className="w-3 h-3" />
-              Verified Facility
-            </Badge>
+            {orgData.verificationStatus === 'verified' ? (
+              <Badge variant="outline-success">
+                <CheckCircle2 className="w-3 h-3" />
+                Verified Facility
+              </Badge>
+            ) : (
+              <Badge variant="outline-warning">
+                <Shield className="w-3 h-3" />
+                Unverified Facility
+              </Badge>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -393,15 +481,16 @@ export const SettingsPage: React.FC = () => {
               type="submit"
               variant="primary"
               size="lg"
-              disabled={isSaving}
+              disabled={updateMutation.isPending}
               className="w-full sm:w-auto shadow-sm"
             >
               <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving Changes...' : 'Save Changes'}
+              {updateMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
             </Button>
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 };

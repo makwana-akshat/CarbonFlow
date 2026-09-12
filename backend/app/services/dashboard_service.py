@@ -24,7 +24,7 @@ class DashboardService:
         self.db = get_supabase_client()
         
     def _get_internal_user_id(self, clerk_id: str):
-        user = self.user_repo.get_by_clerk_id(clerk_id)
+        user = self.user_repo.get_user_by_clerk_id(clerk_id)
         if not user:
             raise Exception("User not found")
         return user

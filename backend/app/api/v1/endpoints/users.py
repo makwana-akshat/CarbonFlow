@@ -30,7 +30,17 @@ def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends
             clerk_user_id=clerk_user_id,
             first_name=request.first_name,
             last_name=request.last_name,
-            organisation=request.organisation,
+            phone=request.phone,
+            job_title=request.job_title,
+            company_name=request.company_name,
+            industry=request.industry,
+            co2_capacity=request.co2_capacity,
+            facility_location=request.facility_location,
+            is_verified=request.is_verified,
+            notif_price_alerts=request.notif_price_alerts,
+            notif_supply_alerts=request.notif_supply_alerts,
+            notif_order_updates=request.notif_order_updates,
+            notif_contract_notifs=request.notif_contract_notifs,
             role=request.role
         )
         if not user:

@@ -24,10 +24,9 @@ export interface SupplierListingItem {
   pricePerTon: number;
   transportMode: string;
   location: string;
-  status: 'active' | 'paused' | 'draft' | 'sold_out' | string;
+  status: 'active' | 'cancelled' | 'draft' | 'fulfilled' | string;
   buyerRequestsCount: number;
   postedDate: string;
-  notes?: string;
 }
 
 export const MySupplyView: React.FC = () => {
@@ -99,9 +98,9 @@ export const MySupplyView: React.FC = () => {
     return [
       { id: 'all', label: `All (${counts.all || 0})` },
       { id: 'active', label: `Active (${counts.active || 0})` },
-      { id: 'paused', label: `Paused (${counts.paused || 0})` },
+      { id: 'cancelled', label: `Paused (${counts.cancelled || 0})` },
       { id: 'draft', label: `Draft (${counts.draft || 0})` },
-      { id: 'sold_out', label: `Sold Out (${counts.sold_out || 0})` },
+      { id: 'fulfilled', label: `Sold Out (${counts.fulfilled || 0})` },
     ];
   }, [counts]);
 
@@ -153,18 +152,27 @@ export const MySupplyView: React.FC = () => {
   // Actions handler
   const handleAction = (actionId: string, listing: SupplierListingItem) => {
     if (actionId === 'pause') {
-      updateMutation.mutate({ id: listing.id, data: { status: 'paused' } });
+      updateMutation.mutate({ id: listing.id, data: { status: 'cancelled' } });
       showToast(`Pausing listing "${listing.facilityName}"...`);
     } else if (actionId === 'publish') {
       updateMutation.mutate({ id: listing.id, data: { status: 'active' } });
       showToast(`Publishing listing "${listing.facilityName}"...`);
     } else if (actionId === 'close') {
-      updateMutation.mutate({ id: listing.id, data: { status: 'sold_out' } });
+      updateMutation.mutate({ id: listing.id, data: { status: 'fulfilled' } });
       showToast(`Marking "${listing.facilityName}" as sold out...`);
     } else if (actionId === 'edit') {
       setSelectedListing(listing);
     }
   };
+
+  const { data: dbUser } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return null;
+      return fetchWithAuth('/users/me', token);
+    }
+  });
 
   // Form State for + New Listing
   const [formFacility, setFormFacility] = useState('');
@@ -175,6 +183,17 @@ export const MySupplyView: React.FC = () => {
   const [formTransport, setFormTransport] = useState('Pipeline-ready');
   const [formLocation, setFormLocation] = useState('');
   const [formGrade, setFormGrade] = useState('Ultra-Pure Food/Beverage');
+
+  useEffect(() => {
+    if (dbUser) {
+      if (dbUser.company_name && !formFacility) {
+        setFormFacility(dbUser.company_name + ' Node 1');
+      }
+      if (dbUser.facility_location && formLocation === 'Dahej Corridor, Gujarat') {
+        setFormLocation(dbUser.facility_location);
+      }
+    }
+  }, [dbUser]);
 
   const handleCreateListing = (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,9 +274,9 @@ export const MySupplyView: React.FC = () => {
       render: (row) => {
         const variants: Record<string, { variant: 'outline-success' | 'outline-warning' | 'neutral' | 'outline-danger'; label: string }> = {
           active: { variant: 'outline-success', label: 'Active' },
-          paused: { variant: 'outline-warning', label: 'Paused' },
+          cancelled: { variant: 'outline-warning', label: 'Paused' },
           draft: { variant: 'neutral', label: 'Draft' },
-          sold_out: { variant: 'neutral', label: 'Sold Out' },
+          fulfilled: { variant: 'neutral', label: 'Sold Out' },
           inactive: { variant: 'outline-danger', label: 'Inactive' },
         };
         const current = variants[row.status] || { variant: 'neutral', label: row.status };
@@ -308,14 +327,14 @@ export const MySupplyView: React.FC = () => {
           items.push({ id: 'pause', label: 'Pause Listing' });
           items.push({ id: 'edit', label: 'View Terms' });
           items.push({ id: 'close', label: 'Mark as Sold Out' });
-        } else if (row.status === 'paused') {
+        } else if (row.status === 'cancelled') {
           items.push({ id: 'publish', label: 'Publish (Resume)' });
           items.push({ id: 'edit', label: 'View Terms' });
           items.push({ id: 'close', label: 'Mark as Sold Out' });
         } else if (row.status === 'draft') {
           items.push({ id: 'publish', label: 'Publish to Market' });
           items.push({ id: 'edit', label: 'View Draft' });
-        } else if (row.status === 'sold_out') {
+        } else if (row.status === 'fulfilled') {
           items.push({ id: 'publish', label: 'Re-list Volume' });
           items.push({ id: 'edit', label: 'View Listing' });
         } else {
