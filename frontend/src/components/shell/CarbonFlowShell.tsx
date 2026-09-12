@@ -8,6 +8,7 @@ import { RecommendationDrawer } from './RecommendationDrawer';
 import { ErrorState } from '../common/StateViews';
 import { SettingsPage } from '../settings/SettingsPage';
 import { MarketplaceView } from '../marketplace/MarketplaceView';
+import { ProcurementPlansView } from '../procurement/ProcurementPlansView';
 import { DashboardContent } from '../dashboard/DashboardContent';
 import { MapsPage } from '../maps/MapsPage';
 import { MyRequirementsView } from '../requirements/MyRequirementsView';
@@ -462,54 +463,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
 
             {/* 5. Procurement Plans (Buyer Mode) */}
             {currentPath === '/app/procurement-plans' && (
-              <div className="bg-[var(--surface-card)] rounded-[var(--radius-card)] p-6 border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <FolderKanban className="w-5 h-5 text-[var(--accent-primary)]" />
-                      <h2 className="text-[18px] font-bold text-[var(--ink)]">
-                        Strategic Procurement Plans
-                      </h2>
-                    </div>
-                    <p className="text-[13px] text-[var(--text-secondary-accessible)] mt-1">
-                      Quarterly and annual industrial CO₂ feedstock allocation targets, corridor schedules, and multi-supplier quotas.
-                    </p>
-                  </div>
-                  <Button variant="primary" size="sm" onClick={() => navigate('/app/requirements')}>
-                    + New Allocation Plan
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="p-4 rounded-[var(--radius-chip)] bg-[var(--surface-muted)]/40 border border-[var(--border-subtle)] space-y-2">
-                    <div className="flex justify-between items-start">
-                      <span className="font-semibold text-[14px] text-[var(--ink)]">FY2026-Q3 Blast Furnace Mitigation</span>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#34C77B]/10 text-[var(--status-success)]">Active</span>
-                    </div>
-                    <p className="text-[12px] text-[var(--text-secondary)]">Planned Volume: 45,000 t · 3 Contracted Corridors (Dahej, Hazira, Vapi)</p>
-                    <div className="w-full bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden">
-                      <div className="bg-[var(--accent-primary)] h-full w-[68%]" />
-                    </div>
-                    <div className="flex justify-between text-[11px] text-[var(--text-secondary-accessible)]">
-                      <span>30,600 t Secured (68%)</span>
-                      <span>Target: Sep 30, 2026</span>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-[var(--radius-chip)] bg-[var(--surface-muted)]/40 border border-[var(--border-subtle)] space-y-2">
-                    <div className="flex justify-between items-start">
-                      <span className="font-semibold text-[14px] text-[var(--ink)]">Direct Injection High-Purity Buffer</span>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#F5A623]/10 text-[var(--status-warning)]">Under Review</span>
-                    </div>
-                    <p className="text-[12px] text-[var(--text-secondary)]">Planned Volume: 15,000 t · Minimum 99.8% DAC Purity</p>
-                    <div className="w-full bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden">
-                      <div className="bg-[var(--accent-primary)] h-full w-[35%]" />
-                    </div>
-                    <div className="flex justify-between text-[11px] text-[var(--text-secondary-accessible)]">
-                      <span>5,250 t Secured (35%)</span>
-                      <span>Target: Nov 15, 2026</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ProcurementPlansView />
             )}
 
             {/* 6. Buyer Requests (Supplier Mode) */}

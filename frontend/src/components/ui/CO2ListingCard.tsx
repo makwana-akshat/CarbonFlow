@@ -50,7 +50,10 @@ const CO2ListingCard = React.forwardRef<HTMLDivElement, CO2ListingCardProps>(
     ref
   ) => {
     // Helper to format INR currency
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: number | undefined | null) => {
+      if (amount === undefined || amount === null || Number.isNaN(amount)) {
+        return 'N/A';
+      }
       return new Intl.NumberFormat('en-IN', {
         style: 'currency',
         currency: 'INR',

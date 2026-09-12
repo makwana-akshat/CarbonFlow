@@ -5,12 +5,15 @@ export const calculateRoute = async (token: string | null, origin: string, desti
   
   if (!data?.options) return [];
   
-  // Map backend schema (costInr) to frontend schema (transportCostINR) to fix the NaN bug
+  // Map backend schema (estimated_cost_inr) to frontend schema (transportCostINR) to fix the NaN bug
   return data.options.map((opt: any) => ({
     ...opt,
-    transportCostINR: opt.costInr,
-    transportEmissionsTons: opt.carbonEmissionsKg / 1000, // Convert kg to tons for frontend consistency
-    estimatedTime: `${opt.durationHrs}h`,
+    distanceKm: opt.distance_km,
+    transportCostINR: opt.estimated_cost_inr,
+    transportEmissionsTons: opt.emissions_tco2e,
+    estimatedTime: `${opt.travel_time_hrs}h`,
+    volume: opt.volume_tonnes,
+    reliabilityScore: opt.reliability_score
   }));
 };
 

@@ -39,6 +39,9 @@ class LogisticsService:
             
         routes = []
         
+        # Handle invalid volume
+        safe_volume = 0.0 if volume is None or math.isnan(volume) else volume
+
         # Pipeline option if purity is high
         if purity >= 97.0:
             routes.append(RouteOption(
@@ -46,10 +49,12 @@ class LogisticsService:
                 name="Regional Supercritical Trunk",
                 modeId="pipeline",
                 modeName="Pipeline",
-                distanceKm=round(distance_km, 1),
-                durationHrs=round(distance_km / 150.0, 1), # Pipeline flow speed roughly
-                costInr=round(distance_km * volume * 0.5, 2),
-                carbonEmissionsKg=round(distance_km * 0.1, 1),
+                distance_km=round(distance_km, 1),
+                travel_time_hrs=round(distance_km / 150.0, 1), # Pipeline flow speed roughly
+                estimated_cost_inr=round(distance_km * safe_volume * 0.5, 2),
+                emissions_tco2e=round((distance_km * 0.1) / 1000.0, 4), # Convert kg to tonnes
+                volume_tonnes=safe_volume,
+                reliability_score=99.5,
                 isRecommended=True,
                 riskLevel="Low",
                 steps=[f"{origin.split(',')[0]} Compression", "Trunk Line", f"{destination.split(',')[0]} Decompression"]
@@ -61,10 +66,12 @@ class LogisticsService:
             name="Highway Express Corridor",
             modeId="cryogenic_truck",
             modeName="Cryogenic Truck",
-            distanceKm=round(distance_km * 1.2, 1), # Road distance is longer than straight line
-            durationHrs=round(distance_km * 1.2 / 50.0, 1), # 50 km/h average
-            costInr=round(distance_km * 1.2 * volume * 1.5, 2),
-            carbonEmissionsKg=round(distance_km * 1.2 * volume * 0.05, 1),
+            distance_km=round(distance_km * 1.2, 1), # Road distance is longer than straight line
+            travel_time_hrs=round(distance_km * 1.2 / 50.0, 1), # 50 km/h average
+            estimated_cost_inr=round(distance_km * 1.2 * safe_volume * 1.5, 2),
+            emissions_tco2e=round((distance_km * 1.2 * safe_volume * 0.05) / 1000.0, 4), # Convert kg to tonnes
+            volume_tonnes=safe_volume,
+            reliability_score=92.0,
             isRecommended=not (purity >= 97.0), # Recommended if pipeline not available
             riskLevel="Medium",
             steps=[f"Loading at {origin.split(',')[0]}", "Highway Transit", f"Unloading at {destination.split(',')[0]}"]

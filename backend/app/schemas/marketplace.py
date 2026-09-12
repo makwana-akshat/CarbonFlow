@@ -51,6 +51,8 @@ class CO2RequestBase(BaseModel):
     status: str = "draft"
     is_urgent: Optional[bool] = False
     offtake_frequency: Optional[str] = None
+    secured_volume: Optional[float] = 0.0
+    contracted_corridors: Optional[List[str]] = []
 
 class CO2RequestCreate(CO2RequestBase):
     pass

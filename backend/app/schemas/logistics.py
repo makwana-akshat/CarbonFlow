@@ -6,10 +6,12 @@ class RouteOption(BaseModel):
     name: str
     modeId: str
     modeName: str
-    distanceKm: float
-    durationHrs: float
-    costInr: float
-    carbonEmissionsKg: float
+    distance_km: float
+    travel_time_hrs: float
+    estimated_cost_inr: float
+    emissions_tco2e: float
+    volume_tonnes: float
+    reliability_score: float
     isRecommended: bool
     riskLevel: str
     steps: List[str]

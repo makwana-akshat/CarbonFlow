@@ -17,7 +17,10 @@ export const RouteOptionsPanel: React.FC<RouteOptionsPanelProps> = ({
   className = '',
   hideHeader = false,
 }) => {
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || Number.isNaN(amount)) {
+      return 'N/A';
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
