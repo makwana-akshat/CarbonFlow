@@ -9,7 +9,6 @@ import {
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { MatchScoreBar } from '../dashboard/MatchScoreBar';
-import { RECOMMENDATIONS_DATA } from '../../data/mockData';
 import type { RecommendationItem } from '../../types/dashboard';
 
 interface RecommendationDrawerProps {
@@ -30,8 +29,7 @@ export const RecommendationDrawer: React.FC<RecommendationDrawerProps> = ({
   if (!item) return null;
 
   // Prepare top 3 candidates for comparison table
-  const defaultCandidates = RECOMMENDATIONS_DATA.buyer;
-  let candidates = (topCandidates && topCandidates.length > 0) ? topCandidates : defaultCandidates;
+  let candidates = (topCandidates && topCandidates.length > 0) ? topCandidates : [item];
 
   // Ensure current item is in candidates list (at position 0 if top pick)
   if (!candidates.find((c) => c.id === item.id)) {

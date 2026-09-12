@@ -8,6 +8,13 @@ class RouteStep(BaseModel):
     icon_type: str
     label: str
 
+class MatchScoreBreakdown(BaseModel):
+    purity: int
+    price: int
+    distance: int
+    reliability: int
+    segmentFit: int
+
 class RecommendationResponse(BaseModel):
     id: uuid.UUID
     user_id: Optional[uuid.UUID] = None
@@ -29,6 +36,11 @@ class RecommendationResponse(BaseModel):
     purity: Optional[str] = None
     delivery_timeline: Optional[str] = None
     certification: Optional[str] = None
+    distance: Optional[str] = None
+    reliability: Optional[str] = None
+    segment: Optional[str] = None
+    reasons: Optional[List[str]] = None
+    breakdown: Optional[MatchScoreBreakdown] = None
     route_steps: Optional[List[RouteStep]] = None
     created_at: datetime
 

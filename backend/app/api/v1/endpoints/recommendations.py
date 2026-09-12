@@ -10,10 +10,11 @@ recommendation_service = RecommendationService()
 @router.get("", response_model=List[RecommendationResponse])
 def get_recommendations(
     role: str = Query(..., description="Role to fetch recommendations for (buyer or supplier)"),
+    refresh: bool = Query(False, description="Force refresh recommendations"),
     clerk_user_id: str = Depends(get_current_user_id)
 ):
     """Returns AI recommendations/matches for the current user."""
     try:
-        return recommendation_service.get_recommendations_for_user(clerk_user_id, role)
+        return recommendation_service.get_recommendations_for_user(clerk_user_id, role, refresh=refresh)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -7,7 +7,6 @@ import { RecommendedMatches } from '../dashboard/RecommendedMatches';
 import { RecommendationDrawer } from './RecommendationDrawer';
 import { ErrorState } from '../common/StateViews';
 import { SettingsPage } from '../settings/SettingsPage';
-import { RECOMMENDATIONS_DATA } from '../../data/mockData';
 import { MarketplaceView } from '../marketplace/MarketplaceView';
 import { DashboardContent } from '../dashboard/DashboardContent';
 import { MapsPage } from '../maps/MapsPage';
@@ -157,7 +156,9 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
 
   useEffect(() => {
     const fetchRecs = async () => {
+      if (location.pathname !== '/app/recommendations') return;
       try {
+        setDashboardState('loading');
         const token = await getToken();
         if (!token) return;
         const data = await getRecommendations(token, userRole);
@@ -179,16 +180,23 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
             purity: r.purity || '',
             deliveryTimeline: r.delivery_timeline || '',
             certification: r.certification || '',
+            distance: r.distance || '',
+            reliability: r.reliability || '',
+            segment: r.segment || '',
+            reasons: r.reasons || [],
+            breakdown: r.breakdown,
             routeSteps: r.route_steps || [],
           }));
           setApiRecommendations(mapped);
         }
+        setDashboardState('success');
       } catch (err) {
         console.error(err);
+        setDashboardState('error');
       }
     };
     fetchRecs();
-  }, [getToken, userRole]);
+  }, [getToken, userRole, location.pathname]);
 
   const handleUpdateFilter = (updates: Partial<FilterState>) => {
     setFilterState((prev) => ({ ...prev, ...updates }));
@@ -205,9 +213,8 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     });
   };
 
-  // Filtered & Sorted Recommendations
   const currentRecommendations = useMemo(() => {
-    const rawList = apiRecommendations.length > 0 ? apiRecommendations : (RECOMMENDATIONS_DATA[userRole] || []);
+    const rawList = apiRecommendations;
 
     return rawList
       .filter((item) => {

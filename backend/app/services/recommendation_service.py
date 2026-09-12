@@ -1,27 +1,42 @@
 from app.core.config import settings
 from supabase import create_client, Client
 from app.repositories.user_repository import UserRepository
+from app.services.matching_engine import MatchingEngine
 
 import uuid
 from decimal import Decimal
-
-MATCH_WEIGHTS = {
-    "purity": 0.40,
-    "price": 0.40,
-    "quantity": 0.20,
-}
 
 class RecommendationService:
     def __init__(self):
         self.db: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
         self.user_repo = UserRepository()
+        self.engine = MatchingEngine()
 
     def _get_company_name(self, user_dict):
-        # Gracefully handle the fact that company_name might be named differently
         if not user_dict: return "Unknown Company"
         return user_dict.get("company_name") or user_dict.get("organisation") or "Unknown Company"
+        
+    def _get_route_steps(self, transport_modes):
+        if not transport_modes: return []
+        steps = []
+        mode = transport_modes[0].lower() if isinstance(transport_modes, list) else transport_modes.lower()
+        steps.append({"icon_type": "capture", "label": "Origin Source"})
+        
+        if 'pipeline' in mode:
+            steps.append({"icon_type": "pipeline", "label": "Regional Pipeline"})
+        elif 'rail' in mode:
+            steps.append({"icon_type": "rail", "label": "ISO Rail Transfer"})
+        elif 'truck' in mode:
+            steps.append({"icon_type": "truck", "label": "Road Freight"})
+        elif 'barge' in mode:
+            steps.append({"icon_type": "terminal", "label": "Marine Barge"})
+        else:
+            steps.append({"icon_type": "cryo", "label": "Logistics Dispatch"})
+            
+        steps.append({"icon_type": "terminal", "label": "Destination Hub"})
+        return steps
 
-    def get_recommendations_for_user(self, clerk_user_id: str, role: str):
+    def get_recommendations_for_user(self, clerk_user_id: str, role: str, refresh: bool = False):
         user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
         if not user:
             return []
@@ -29,69 +44,38 @@ class RecommendationService:
         user_id = user["id"]
         recommendations = []
         
+        # We always calculate on the fly for this deterministic version,
+        # so refresh=True doesn't require clearing a cache here.
+        
         if role == "buyer":
-            # Fetch all active requests for this buyer
             reqs_resp = self.db.table("co2_requests").select("*").eq("buyer_id", user_id).eq("status", "active").execute()
             reqs = reqs_resp.data if reqs_resp else []
             if not reqs:
                 return []
                 
-            # Fetch all active listings platform-wide
-            listings_resp = self.db.table("co2_listings").select("*, supplier:supplier_id(company_name, organisation)").eq("status", "active").execute()
+            listings_resp = self.db.table("co2_listings").select("*, supplier:supplier_id(company_name, organisation, is_verified)").eq("status", "active").execute()
             listings = listings_resp.data if listings_resp else []
             
             for req in reqs:
                 for lst in listings:
-                    # Hard constraints
-                    listing_purity = float(lst.get("purity_percentage") or 0)
-                    req_purity = float(req.get("min_purity_required") or 0)
-                    if listing_purity < req_purity:
+                    supplier_data = lst.get("supplier", {}) or {}
+                    # Inject verified status for the engine
+                    lst["is_verified"] = supplier_data.get("is_verified", True)
+                    
+                    match_result = self.engine.calculate_match(supply=lst, demand=req)
+                    if not match_result.get("is_match"):
                         continue
                         
-                    listing_price = float(lst.get("price_per_ton") or 0)
-                    req_price = float(req.get("target_price") or 0)
-                    if req_price > 0 and listing_price > req_price:
-                        continue
-                        
+                    company_name = self._get_company_name(supplier_data)
                     listing_vol = float(lst.get("volume_tpa") or 0)
-                    req_vol = float(req.get("volume_needed") or 0)
-                    if listing_vol <= 0:
-                        continue
-                        
-                    # Calculate Score
-                    # Purity score (40%)
-                    # Exact match = 50 pts, +1 pt per 0.1% over requirement, capped at 100
-                    purity_diff = listing_purity - req_purity
-                    p_score = min(100, 50 + (purity_diff * 10))
-                    
-                    # Price score (40%)
-                    # Exact match = 50 pts. Every 1% cheaper = +2.5 pts. Capped at 100
-                    if req_price > 0:
-                        price_diff_pct = ((req_price - listing_price) / req_price) * 100
-                        pr_score = min(100, 50 + (price_diff_pct * 2.5))
-                    else:
-                        pr_score = 100
-                        
-                    # Quantity score (20%)
-                    # Full fulfillment = 100 pts. Partial = prorated
-                    q_score = 100 if listing_vol >= req_vol else (listing_vol / req_vol) * 100
-                    
-                    total_score = (p_score * MATCH_WEIGHTS["purity"]) + (pr_score * MATCH_WEIGHTS["price"]) + (q_score * MATCH_WEIGHTS["quantity"])
-                    total_score = min(100, max(0, total_score))
+                    listing_price = float(lst.get("price_per_ton") or 0)
+                    listing_purity = float(lst.get("purity_percentage") or 0)
+                    distance_km = match_result.get("distance_km", 0)
                     
                     tags = []
-                    if listing_purity >= 99.0: tags.append("High Purity")
-                    if listing_price < req_price: tags.append("Under Budget")
-                    if listing_vol >= req_vol: tags.append("Full Fulfillment")
-                    
-                    explanations = []
-                    if listing_purity > req_purity:
-                        explanations.append(f"Purity is {listing_purity}% (exceeds requirement by {purity_diff:.1f}%)")
-                    if listing_price < req_price:
-                        explanations.append(f"Price is ₹{req_price - listing_price:,.0f} below target")
-                        
-                    supplier_data = lst.get("supplier", {})
-                    company_name = self._get_company_name(supplier_data)
+                    if match_result["breakdown"]["purity"] > 90: tags.append("High Purity")
+                    if match_result["breakdown"]["price"] > 90: tags.append("Under Budget")
+                    if match_result["breakdown"]["segmentFit"] > 90: tags.append(lst.get("source_type", "Industrial"))
                     
                     recommendations.append({
                         "id": str(uuid.uuid4()),
@@ -101,67 +85,56 @@ class RecommendationService:
                         "requirement_id": req["id"],
                         "company_name": company_name,
                         "facility_type": lst.get("facility_name") or "Capture Facility",
-                        "match_score": Decimal(str(round(total_score, 1))),
+                        "match_score": Decimal(str(match_result["final_score"])),
                         "is_best_match": False,
-                        "is_verified": True,
-                        "tags": tags,
+                        "is_verified": lst["is_verified"],
+                        "tags": tags[:3], # Limit to 3 tags
                         "co2_grade": lst.get("co2_grade"),
                         "volume": f"{listing_vol:,.0f} t",
                         "price_per_ton": f"₹{listing_price:,.0f}/t",
+                        "co2_source": lst.get("source_type", "Industrial"),
+                        "transport_mode": lst.get("transport_modes", ["Truck"])[0] if lst.get("transport_modes") else "Truck",
                         "purity": f"{listing_purity}%",
+                        "delivery_timeline": "Spot / Immediate",
+                        "certification": "ISO 14064-2 Verified" if lst["is_verified"] else "Self-Reported",
+                        "distance": f"{distance_km} km",
+                        "reliability": f"{match_result['reliability_pct']}%",
+                        "segment": match_result["segment_name"],
+                        "reasons": match_result["reasons"],
+                        "breakdown": match_result["breakdown"],
+                        "route_steps": self._get_route_steps(lst.get("transport_modes")),
                         "created_at": lst.get("created_at")
                     })
                     
         elif role == "supplier":
-            # Fetch all active listings for this supplier
             listings_resp = self.db.table("co2_listings").select("*").eq("supplier_id", user_id).eq("status", "active").execute()
             listings = listings_resp.data if listings_resp else []
             if not listings:
                 return []
                 
-            # Fetch all active requests platform-wide
             reqs_resp = self.db.table("co2_requests").select("*, buyer:buyer_id(company_name, organisation)").eq("status", "active").execute()
             reqs = reqs_resp.data if reqs_resp else []
             
             for lst in listings:
+                # We fetch supplier data manually for the engine (we could fetch it once)
+                user_data = user
+                lst["is_verified"] = user_data.get("is_verified", True)
+                
                 for req in reqs:
-                    # Hard constraints
-                    listing_purity = float(lst.get("purity_percentage") or 0)
-                    req_purity = float(req.get("min_purity_required") or 0)
-                    if listing_purity < req_purity:
+                    match_result = self.engine.calculate_match(supply=lst, demand=req)
+                    if not match_result.get("is_match"):
                         continue
                         
-                    listing_price = float(lst.get("price_per_ton") or 0)
-                    req_price = float(req.get("target_price") or 0)
-                    if req_price > 0 and listing_price > req_price:
-                        continue
-                        
-                    listing_vol = float(lst.get("volume_tpa") or 0)
-                    req_vol = float(req.get("volume_needed") or 0)
-                    if req_vol <= 0:
-                        continue
-                        
-                    # Calculate Score
-                    purity_diff = listing_purity - req_purity
-                    p_score = min(100, 50 + (purity_diff * 10))
-                    
-                    if req_price > 0:
-                        price_diff_pct = ((req_price - listing_price) / req_price) * 100
-                        pr_score = min(100, 50 + (price_diff_pct * 2.5))
-                    else:
-                        pr_score = 100
-                        
-                    q_score = 100 if listing_vol >= req_vol else (listing_vol / req_vol) * 100
-                    
-                    total_score = (p_score * MATCH_WEIGHTS["purity"]) + (pr_score * MATCH_WEIGHTS["price"]) + (q_score * MATCH_WEIGHTS["quantity"])
-                    total_score = min(100, max(0, total_score))
-                    
-                    tags = []
-                    if listing_vol >= req_vol: tags.append("Can Fulfill")
-                    if listing_price <= req_price: tags.append("Price Match")
-                    
-                    buyer_data = req.get("buyer", {})
+                    buyer_data = req.get("buyer", {}) or {}
                     company_name = self._get_company_name(buyer_data)
+                    req_vol = float(req.get("volume_needed") or 0)
+                    req_price = float(req.get("target_price") or 0)
+                    req_purity = float(req.get("min_purity_required") or 0)
+                    distance_km = match_result.get("distance_km", 0)
+                    
+                    tags = ["Verified Offtake"]
+                    if match_result["breakdown"]["price"] >= 80: tags.append("Price Match")
+                    if match_result["breakdown"]["quantity"] == 100: tags.append("Full Fulfillment")
                     
                     recommendations.append({
                         "id": str(uuid.uuid4()),
@@ -171,22 +144,31 @@ class RecommendationService:
                         "requirement_id": req["id"],
                         "company_name": company_name,
                         "facility_type": req.get("application") or "Industrial",
-                        "match_score": Decimal(str(round(total_score, 1))),
+                        "match_score": Decimal(str(match_result["final_score"])),
                         "is_best_match": False,
                         "is_verified": True,
-                        "tags": tags,
+                        "tags": tags[:3],
                         "co2_grade": req.get("required_grade"),
-                        "volume": f"{req_vol:,.0f} t",
+                        "volume": f"{req_vol:,.0f} t needed",
                         "price_per_ton": f"Target: ₹{req_price:,.0f}/t",
+                        "co2_source": req.get("application") or "Industrial",
+                        "transport_mode": "Buyer Arranged",
                         "purity": f"Min: {req_purity}%",
+                        "delivery_timeline": "Immediate Requirement",
+                        "certification": "Verified Buyer",
+                        "distance": f"{distance_km} km",
+                        "reliability": "99.1%", # Hardcoded for buyers
+                        "segment": req.get("application", "Standard").upper(),
+                        "reasons": match_result["reasons"],
+                        "breakdown": match_result["breakdown"],
+                        "route_steps": self._get_route_steps(["truck"]),
                         "created_at": req.get("created_at")
                     })
         
         # Rank by score DESC
         recommendations.sort(key=lambda x: x["match_score"], reverse=True)
         
-        # Apply tie-breaker explicitly by putting newest created first if scores tie
-        # But for simplicity, the sort above is stable, we just need the highest score to be Best Match
+        # Assign best match
         if recommendations:
             recommendations[0]["is_best_match"] = True
             
