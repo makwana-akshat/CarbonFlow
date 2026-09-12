@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import users, marketplace, orders, dashboard, telemetry, impact, recommendations
+from app.api.v1.endpoints import users, marketplace, orders, dashboard, telemetry, impact, recommendations, contracts, maps, logistics
 
 api_router = APIRouter()
 
@@ -14,4 +14,7 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboar
 api_router.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
 api_router.include_router(impact.router, prefix="/impact", tags=["impact"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
+api_router.include_router(contracts.router, prefix="/contracts", tags=["contracts"])
+api_router.include_router(maps.router, prefix="/maps", tags=["maps"])
+api_router.include_router(logistics.router, prefix="/logistics", tags=["logistics"])
 

@@ -10,8 +10,8 @@ import {
   FACILITIES,
   ROUTES,
   REGIONS,
-  CARBON_FLOW_EDGES,
 } from '../data/mapsMockData';
+import { fetchWithAuth } from './api';
 import type {
   SupplierNode,
   BuyerNode,
@@ -25,8 +25,10 @@ import type {
 
 // ─── Supplier Queries ─────────────────────────────────────────────────────────
 
-export function getSuppliers(filters: MapFilterState, searchQuery: string): SupplierNode[] {
-  return SUPPLIERS.filter((s) => {
+export async function getSuppliers(token: string | null, filters: MapFilterState, searchQuery: string): Promise<SupplierNode[]> {
+  const data = await fetchWithAuth('/maps/suppliers', token);
+  if (!data) return [];
+  return data.filter((s: SupplierNode) => {
     if (filters.region && !s.location.toLowerCase().includes(filters.region.toLowerCase())) return false;
     if (filters.industry && s.industry.toLowerCase() !== filters.industry.toLowerCase()) return false;
     if (s.purity < filters.minPurity) return false;
@@ -48,8 +50,10 @@ export function getSuppliers(filters: MapFilterState, searchQuery: string): Supp
 
 // ─── Buyer Queries ────────────────────────────────────────────────────────────
 
-export function getBuyers(filters: MapFilterState, searchQuery: string): BuyerNode[] {
-  return BUYERS.filter((b) => {
+export async function getBuyers(token: string | null, filters: MapFilterState, searchQuery: string): Promise<BuyerNode[]> {
+  const data = await fetchWithAuth('/maps/buyers', token);
+  if (!data) return [];
+  return data.filter((b: BuyerNode) => {
     if (filters.region && !b.location.toLowerCase().includes(filters.region.toLowerCase())) return false;
     if (filters.application && b.application.toLowerCase() !== filters.application.toLowerCase()) return false;
     if (b.minPurity < filters.minPurity) return false;
@@ -69,8 +73,10 @@ export function getBuyers(filters: MapFilterState, searchQuery: string): BuyerNo
 
 // ─── Facility Queries ─────────────────────────────────────────────────────────
 
-export function getFacilities(_filters: MapFilterState, searchQuery: string): FacilityNode[] {
-  return FACILITIES.filter((f) => {
+export async function getFacilities(token: string | null, _filters: MapFilterState, searchQuery: string): Promise<FacilityNode[]> {
+  const data = await fetchWithAuth('/maps/facilities', token);
+  if (!data) return [];
+  return data.filter((f: FacilityNode) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -85,8 +91,10 @@ export function getFacilities(_filters: MapFilterState, searchQuery: string): Fa
 
 // ─── Route Queries ────────────────────────────────────────────────────────────
 
-export function getRoutes(filters: MapFilterState, searchQuery: string): RouteData[] {
-  return ROUTES.filter((r) => {
+export async function getRoutes(token: string | null, filters: MapFilterState, searchQuery: string): Promise<RouteData[]> {
+  const data = await fetchWithAuth('/maps/routes', token);
+  if (!data) return [];
+  return data.filter((r: RouteData) => {
     if (r.distanceKm > filters.maxDistance) return false;
     if (r.estimatedCostINR > filters.maxTransportCost) return false;
     if (searchQuery.trim()) {
@@ -110,8 +118,9 @@ export function getRegions(filters: MapFilterState): RegionData[] {
 
 // ─── Carbon Flow Queries ──────────────────────────────────────────────────────
 
-export function getCarbonFlows(): CarbonFlowEdge[] {
-  return CARBON_FLOW_EDGES;
+export async function getCarbonFlows(token: string | null): Promise<CarbonFlowEdge[]> {
+  const data = await fetchWithAuth('/maps/carbon-flows', token);
+  return data || [];
 }
 
 // ─── Search across all entities ───────────────────────────────────────────────

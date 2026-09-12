@@ -10,9 +10,12 @@ import {
   type AuditContractStatus 
 } from '../../data/auditContractsMock';
 import { Toast } from '../ui/Feedback';
+import { useAuth } from '@clerk/clerk-react';
+import { getContracts, getComplianceSummary } from '../../services/contractsApi';
 
 export const AuditContractsPage: React.FC = () => {
-  const [contracts] = useState<AuditContractItem[]>(AUDIT_CONTRACTS_DATA);
+  const [contracts, setContracts] = useState<AuditContractItem[]>(AUDIT_CONTRACTS_DATA);
+  const [summary, setSummary] = useState(COMPLIANCE_SUMMARY);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AuditContractStatus | 'All'>('All');
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -24,6 +27,71 @@ export const AuditContractsPage: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const { getToken } = useAuth();
+  
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const [apiContracts, apiSummary] = await Promise.all([
+          getContracts(token),
+          getComplianceSummary(token)
+        ]);
+        if (apiContracts && apiContracts.length > 0) {
+          const mapped: AuditContractItem[] = apiContracts.map(c => ({
+            id: c.id,
+            contractId: c.contract_id,
+            supplier: c.supplier_name,
+            buyer: c.buyer_name,
+            volume: c.volume,
+            value: c.contract_value,
+            date: c.created_date,
+            status: c.status as AuditContractStatus,
+            version: c.version,
+            purity: c.purity || '',
+            pricePerTon: c.price_per_ton || '',
+            deliveryDate: c.delivery_date || '',
+            transportationTerms: c.transportation_terms || '',
+            paymentTerms: c.payment_terms || '',
+            auditHash: c.audit_hash || '',
+            isoStandard: c.iso_standard || '',
+            timeline: c.timeline.map((t: any) => ({
+              step: t.step,
+              label: t.label,
+              timestamp: t.timestamp_str || '',
+              actor: t.actor || '',
+              role: t.role || '',
+              action: t.action || '',
+              notes: t.notes || '',
+              status: t.status
+            })),
+            versions: c.version_history.map((v: any) => ({
+              version: v.version,
+              isCurrent: v.is_current,
+              summary: v.summary || '',
+              date: v.effective_date || '',
+              author: v.author || '',
+              changes: v.changes || []
+            }))
+          }));
+          setContracts(mapped);
+        }
+        if (apiSummary) {
+          setSummary({
+            activeContracts: apiSummary.active_contracts,
+            pendingApproval: apiSummary.pending_approval,
+            completed: apiSummary.completed,
+            withAmendments: apiSummary.with_amendments
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, [getToken]);
 
   // Filtered contracts
   const filteredContracts = useMemo(() => {
@@ -88,7 +156,7 @@ export const AuditContractsPage: React.FC = () => {
 
       {/* 2. Compliance Summary Bar (Quiet metrics) */}
       <ComplianceSummaryBar
-        summary={COMPLIANCE_SUMMARY}
+        summary={summary}
         onFilterActive={() => setSelectedStatus('Active')}
         onFilterPending={() => setSelectedStatus('Pending Review')}
       />

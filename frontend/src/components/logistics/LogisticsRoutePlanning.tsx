@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Shipment, TransportModeId } from './types';
-import { SAMPLE_SHIPMENTS, getEligibleModes, getRouteOptionsForMode } from './mockShipments';
+import { SAMPLE_SHIPMENTS, getEligibleModes } from './mockShipments';
 import { LogisticsMap } from './LogisticsMap';
+import { useAuth } from '@clerk/clerk-react';
+import { calculateRoute } from '../../services/logisticsApi';
 import { ModeSelectorPanel } from './ModeSelectorPanel';
 import { RouteOptionsPanel } from './RouteOptionsPanel';
 import { BigStatReadouts } from './BigStatReadouts';
@@ -77,10 +79,30 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
     setSelectedModeId(defaultModeId);
   }, [defaultModeId]);
 
-  // Route options for the selected mode
-  const availableRoutes = useMemo(() => {
-    return getRouteOptionsForMode(currentShipment, selectedModeId);
-  }, [currentShipment, selectedModeId]);
+  const [availableRoutes, setAvailableRoutes] = useState<any[]>([]);
+
+  const { getToken } = useAuth();
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const opts = await calculateRoute(
+          token,
+          currentShipment.emitterLocation.city,
+          currentShipment.buyerLocation.city,
+          currentShipment.volume,
+          currentShipment.purity
+        );
+        // filter by modeId on client
+        const filtered = opts.filter(o => o.modeId === selectedModeId);
+        setAvailableRoutes(filtered.length > 0 ? filtered : opts);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchRoutes();
+  }, [currentShipment, selectedModeId, getToken]);
 
   // Selected route state (defaults to recommended route)
   const [selectedRouteId, setSelectedRouteId] = useState<string>(availableRoutes[0]?.id || '');

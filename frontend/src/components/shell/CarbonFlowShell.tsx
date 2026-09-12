@@ -21,6 +21,7 @@ import { AuditContractsPage } from '../contracts/AuditContractsPage';
 import { AssistantWidget } from '../assistant/AssistantWidget';
 import { useAuth } from '@clerk/clerk-react';
 import { getActiveOrders } from '../../services/dashboardApi';
+import { getRecommendations } from '../../services/recommendationsApi';
 
 export interface CarbonFlowShellProps {
   appUser?: {
@@ -82,6 +83,8 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     }
   }, [activeTab, getToken]);
 
+  const [apiRecommendations, setApiRecommendations] = useState<RecommendationItem[]>([]);
+
   // Search and Filter State
   const [filterState, setFilterState] = useState<FilterState>({
     searchQuery: '',
@@ -91,6 +94,41 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     verifiedOnly: false,
     sortBy: 'match',
   });
+
+  React.useEffect(() => {
+    const fetchRecs = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const data = await getRecommendations(token, userRole);
+        if (data) {
+          const mapped = data.map((r: any) => ({
+            id: r.id,
+            companyName: r.company_name,
+            facilityType: r.facility_type || '',
+            location: r.location || '',
+            matchScore: Number(r.match_score),
+            isBestMatch: r.is_best_match,
+            isVerified: r.is_verified,
+            tags: r.tags || [],
+            co2Grade: r.co2_grade || '',
+            volume: r.volume || '',
+            pricePerTon: r.price_per_ton || '',
+            co2Source: r.co2_source || '',
+            transportMode: r.transport_mode || '',
+            purity: r.purity || '',
+            deliveryTimeline: r.delivery_timeline || '',
+            certification: r.certification || '',
+            routeSteps: r.route_steps || []
+          }));
+          setApiRecommendations(mapped);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchRecs();
+  }, [getToken, userRole]);
 
   const handleUpdateFilter = (updates: Partial<FilterState>) => {
     setFilterState((prev) => ({ ...prev, ...updates }));
@@ -114,7 +152,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
 
   // Filtered & Sorted Recommendations
   const currentRecommendations = useMemo(() => {
-    const rawList = RECOMMENDATIONS_DATA[userRole] || [];
+    const rawList = apiRecommendations.length > 0 ? apiRecommendations : (RECOMMENDATIONS_DATA[userRole] || []);
 
     return rawList.filter((item) => {
       if (filterState.searchQuery) {
