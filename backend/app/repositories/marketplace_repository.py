@@ -185,7 +185,7 @@ class MarketplaceRepository:
         
         # 2. Get all requests targeting those listings
         # We join users to get the buyer's details
-        inquiries_res = self.db.table("co2_requests").select("*, users!buyer_id(first_name, last_name, email)").in_("listing_id", listing_ids).order("created_at", desc=True).execute()
+        inquiries_res = self.db.table("co2_requests").select("*, users!buyer_id(first_name, last_name, email, company_name)").in_("listing_id", listing_ids).order("created_at", desc=True).execute()
         
         results = []
         for inq in inquiries_res.data:

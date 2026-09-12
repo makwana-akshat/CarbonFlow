@@ -139,33 +139,17 @@ class MarketplaceService:
         if listing["supplier_id"] != user["id"]:
             raise PermissionError("You do not own the target listing for this inquiry")
             
-        # Create Order from Inquiry
-        from app.services.order_service import OrderService
-        order_svc = OrderService()
-        
-        volume = inquiry.get("volume_needed", 0)
-        price_per_ton = inquiry.get("target_price", listing.get("price_per_ton", 0))
-        
-        safe_order = {
-            "buyer_id": inquiry["buyer_id"],
-            "supplier_id": user["id"],
-            "listing_id": listing["id"],
-            "volume": volume,
-            "total_value": float(volume) * float(price_per_ton),
-            "transport_mode": inquiry.get("delivery_method") or listing.get("transport_modes", ["Road"])[0],
-            "status": "confirmed"
-        }
-        
-        order = order_svc.repo.create_order(safe_order)
-        
-        # Create Contract from Order
+        # Create Contract Draft directly from Inquiry (Do NOT create a final Order yet)
         from app.services.contract_service import ContractService
-        from app.schemas.contract import ContractCreate
+        from app.schemas.contract import ContractCreateFromInquiry
         contract_svc = ContractService()
         
-        contract = contract_svc.create_contract(user["id"], ContractCreate(order_id=order["id"]))
+        contract = contract_svc.create_contract_from_inquiry(
+            user["id"], 
+            ContractCreateFromInquiry(request_id=request_id)
+        )
         
         # Mark inquiry as Accepted
         self.repo.update_request(request_id, {"status": "Accepted"})
         
-        return contract
+        return {"message": "Inquiry accepted and contract drafted", "contract": contract}

@@ -105,10 +105,11 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
         navigate(`/app/audit-contracts`);
       }
     },
-    onError: (error) => {
-      showToast('Failed to accept inquiry.');
+    onError: (error: any) => {
+      const msg = error.response?.data?.detail || 'Failed to accept inquiry and draft contract.';
+      showToast(msg);
       console.error(error);
-    }
+    },
   });
 
   const [inquiriesList, setInquiriesList] = useState<any[]>([]);
