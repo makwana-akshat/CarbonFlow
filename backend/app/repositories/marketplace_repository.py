@@ -129,7 +129,7 @@ class MarketplaceRepository:
         page: int = 1,
         limit: int = 20
     ) -> dict:
-        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role, company_name)", count="exact").eq("status", "active").is_("listing_id", "null")
+        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)", count="exact").eq("status", "active").is_("listing_id", "null")
         
         if min_purity is not None:
             query = query.gte("min_purity_required", min_purity)
@@ -185,7 +185,7 @@ class MarketplaceRepository:
         
         # 2. Get all requests targeting those listings
         # We join users to get the buyer's details
-        inquiries_res = self.db.table("co2_requests").select("*, users!buyer_id(first_name, last_name, company_name, email)").in_("listing_id", listing_ids).order("created_at", desc=True).execute()
+        inquiries_res = self.db.table("co2_requests").select("*, users!buyer_id(first_name, last_name, email)").in_("listing_id", listing_ids).order("created_at", desc=True).execute()
         
         results = []
         for inq in inquiries_res.data:

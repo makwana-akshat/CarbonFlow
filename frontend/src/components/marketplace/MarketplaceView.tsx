@@ -63,6 +63,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   };
 
   const [filterState, setFilterState] = useState<MarketplaceFilterState>(initialFilters);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -133,7 +134,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       }
     };
     fetchData();
-  }, [getToken, filterState, currentPage]);
+  }, [getToken, filterState, currentPage, retryTrigger]);
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filterState.minPurity > 90) count++;
@@ -423,8 +424,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
               title="Unable to load marketplace data"
               description="Failed to synchronize with the regional CO2 dispatch clearing house. Please retry."
               onRetry={() => {
-                setViewState('loading');
-                setTimeout(() => setViewState('success'), 400);
+                setRetryTrigger(prev => prev + 1);
               }}
             />
           ) : totalResults === 0 ? (
