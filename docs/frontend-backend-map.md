@@ -1,73 +1,122 @@
-# Frontend-Backend Implementation Map
+# Frontend-Backend Map
 
-## 1. Route Analysis & API Mapping
+## A. Repository structure
+```text
+CarbonFlow/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── dependencies.py
+│   │   │   └── v1/
+│   │   │       ├── router.py
+│   │   │       └── endpoints/ (users, marketplace, orders, etc.)
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   └── security.py
+│   │   ├── schemas/ (Pydantic models)
+│   │   └── services/ (Business logic)
+│   ├── migrations/
+│   ├── seed.py
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/ (UI, layout, features)
+│   │   ├── data/ (Mock data)
+│   │   ├── services/ (API clients)
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── vite.config.ts
+│   └── package.json
+└── docs/
+```
 
-| Frontend Page | Purpose | Data Needed | API Required | Database Tables | Status |
-| ------------- | ------- | ----------- | ------------ | --------------- | ------ |
-| **Landing** (`/`) | Public overview | System status, auth states | `GET /api/v1/health` | - | Done |
-| **Auth** (`/login`, `/signup`) | Authentication | Clerk integration | `POST /api/v1/users/sync` | `users` | Done |
-| **Dashboard Overview** (`/dashboard/overview`) | High-level summary | KPIs, market prices, supply/demand charts, AI Insights | `GET /api/v1/dashboard/summary` | `kpi_metrics`, `market_prices`, `ai_insights` | Pending |
-| **Marketplace** (`/dashboard/marketplace`) | CO₂ listings & requests | Listings, buyer requests, filters | `GET /api/v1/marketplace/listings` | `co2_listings`, `co2_requests` | Pending |
-| **Requirements** (`/dashboard/requirements`) | Buyer specifications | Requirements list | `GET /api/v1/requirements` | `co2_requests` | Pending |
-| **Recommendations** (`/dashboard/recommendations`) | Matches | Offtake recommendations | `GET /api/v1/recommendations/matches` | `users`, `co2_listings`, `co2_requests` | Pending |
-| **Orders** (`/dashboard/orders`) | Active offtake tracking | Active shipments, pipeline telemetry | `GET /api/v1/orders/active` | `orders`, `logistics_routes` | Pending |
-| **Logistics** (`/dashboard/logistics`) | Route planning & mapping | Eligible modes, routing | `GET /api/v1/logistics/routes` | `logistics_routes`, `facilities` | Pending |
-| **Carbon Impact** (`/app/carbon-impact`) | ESG reporting | CO2 captured, reduction stats | `GET /api/v1/impact/summary` | `impact_metrics`, `orders` | Pending |
-| **Alerts & SCADA** (`/app/alerts`) | Network telemetry | Active warnings, facility statuses | `GET /api/v1/telemetry/alerts` | `alerts`, `facility_status` | Pending |
-| **Audit Contracts** (`/app/audit-contracts`) | Blockchain/Legal clearing | Escrow status, audit timelines | `GET /api/v1/contracts/audit` | `contracts`, `contract_versions` | Pending |
-| **Maps** (`/dashboard/maps`) | Geospatial view | Suppliers, buyers, routes, heatmaps | `GET /api/v1/maps/locations` | `facilities`, `orders` | Pending |
+## B. Frontend route inventory
+- `/` (Landing): Public overview. No data required.
+- `/dashboard/overview` (Dashboard): KPIs, Market Prices. Calls `/api/v1/dashboard/summary`.
+- `/dashboard/marketplace` (Marketplace): Supply listings. Calls `/api/v1/marketplace/listings`.
+- `/dashboard/requirements` (Requirements): Demand requirements. Calls `/api/v1/marketplace/requirements`.
+- `/dashboard/recommendations` (Recommendations): Matches. Calls `/api/v1/recommendations`.
+- `/dashboard/orders` (Orders): Active orders. Calls `/api/v1/orders/active`.
+- `/dashboard/maps` (Maps): Geospatial view. Calls `/api/v1/maps/*`.
+- `/dashboard/logistics` (Logistics): Route planning. Calls `/api/v1/logistics/calculate-route`.
+- `/app/carbon-impact` (Impact): ESG Analytics. Calls `/api/v1/impact/summary`.
+- `/app/alerts` (Alerts): Telemetry. Calls `/api/v1/telemetry/alerts`.
+- `/app/audit-contracts` (Contracts): Audit trails. Calls `/api/v1/contracts`.
 
----
+## C. Frontend component inventory
+- `DashboardContent`: Expects KPI metrics. Calls dashboard API.
+- `MarketplaceView`: Renders listing cards. Calls marketplace APIs.
+- `LogisticsRoutePlanning`: Renders map & transport modes. Calls logistics API.
+- `RecommendedMatches`: Expects matched lists. Calls recommendations API.
+- `AuditContractsPage`: Renders timelines. Calls contracts API.
 
-## 2. Mock Data Inventory
+## D. Mock data inventory
+- `src/data/mockData.ts`, `marketplaceData.ts`, `mockShipments.ts`, `alertsMock.ts`, `auditContractsMock.ts`, `mapsMockData.ts`.
+- **Status**: All major mock data sources have already been replaced by actual `fetchWithAuth` calls to the backend APIs in the current repository state.
 
-| Component / Page | Current Mock Data File | Required Real API | Database Source |
-| ---------------- | ---------------------- | ----------------- | --------------- |
-| `DashboardContent` | `mockData.ts` (`KPI_DATA`, `MARKET_PRICE_DATA`, `SUPPLY_DEMAND_DATA`) | `GET /api/v1/dashboard/summary` | Views aggregating `orders` and `co2_listings` |
-| `RecommendedMatches` | `mockData.ts` (`RECOMMENDATIONS_DATA`) | `GET /api/v1/recommendations/matches` | Matchmaking AI / SQL View |
-| `DashboardPage` (Orders Tab) | Hardcoded array in `CarbonFlowShell.tsx` (`[ORD-8921, ...]`) | `GET /api/v1/orders/active` | `orders`, `logistics_routes` |
-| `MarketplaceView` | `marketplaceData.ts` (`MARKETPLACE_LISTINGS`) | `GET /api/v1/marketplace/listings` | `co2_listings` |
-| `MyRequirementsView` | `marketplaceData.ts` (`MY_REQUIREMENTS`) | `GET /api/v1/requirements` | `co2_requests` |
-| `LogisticsRoutePlanning` | `mockShipments.ts` (`SAMPLE_SHIPMENTS`) | `GET /api/v1/logistics/routes` | `logistics_routes`, `facilities` |
-| `CarbonImpactPage` | `carbonImpactMock.ts` (`BASE_REGIONAL_IMPACT`, etc.) | `GET /api/v1/impact/summary` | `impact_metrics`, `orders` |
-| `AlertsPage` | `alertsMock.ts` (`ACTIVE_ALERTS`, `FACILITY_MONITORING_DATA`) | `GET /api/v1/telemetry/alerts` | `alerts`, `facility_status` |
-| `AuditContractsPage`| `auditContractsMock.ts` (`AUDIT_CONTRACTS`) | `GET /api/v1/contracts/audit` | `contracts` |
-| `MapsPage` | `mapsMockData.ts` (`SUPPLIER_LOCATIONS`, `BUYER_LOCATIONS`) | `GET /api/v1/maps/locations` | `facilities` |
-| `AssistantWidget` | `AssistantDialog.tsx` (Hardcoded string generator) | `POST /api/v1/assistant/chat` | AI LLM Integration |
+## E. Frontend API/service inventory
+- `src/services/api.ts`: Base fetch wrapper (`fetchWithAuth`).
+- `src/services/marketplaceApi.ts`: `getListings`, `getRequirements`.
+- `src/services/dashboardApi.ts`: `getDashboardSummary`.
+- `src/services/ordersApi.ts`: `getActiveOrders`, `getRecentOrders`.
+- `src/services/telemetryApi.ts`: `getAlerts`.
+- `src/services/recommendationsApi.ts`: `getRecommendations`.
+- `src/services/contractsApi.ts`: `getContracts`, `getComplianceSummary`.
+- `src/services/mapService.ts`: `getSuppliers`, `getRoutes`, etc.
+- `src/services/logisticsApi.ts`: `calculateRoute`.
 
----
+## F. TypeScript type inventory
+- Located inside component files (e.g., `SupplierNode`, `RouteData`, `Contract`, `SupplyListing`).
+- Align perfectly with backend Pydantic models (using alias generators for camelCase).
 
-## 3. Database Gap Analysis
+## G. Forms and mutations
+- *Currently Implemented UI Actions*:
+  - Create Listing (Mocked in UI, backend supports `POST /marketplace/listings`).
+  - Accept Contract (Mocked in UI, backend supports `PATCH /contracts/{id}/status`).
+- *Missing Actions*: Full CRUD forms for creating routes, shipments, and complex orders are not fully wired in the frontend UI yet.
 
-The current database only contains the `users` table. Based on the frontend UI requirements, the following tables are required to make the application functional.
+## H. Existing backend endpoints
+- `GET /api/v1/health`
+- `POST /api/v1/users/sync`, `GET /users/me`
+- `GET /api/v1/marketplace/listings`, `GET /marketplace/requirements`
+- `GET /api/v1/orders/active`, `GET /orders/recent`
+- `GET /api/v1/dashboard/summary`
+- `GET /api/v1/telemetry/alerts`
+- `GET /api/v1/impact/summary`
+- `GET /api/v1/recommendations`
+- `GET /api/v1/contracts`, `GET /contracts/compliance-summary`
+- `GET /api/v1/maps/*`
+- `GET /api/v1/logistics/calculate-route`
 
-### Table: `co2_listings`
-* **Why required**: Populates the Marketplace tab for buyers and tracks supplier available inventory.
-* **Fields**: `id` (UUID), `supplier_id` (UUID, FK to users), `facility_name` (TEXT), `co2_grade` (TEXT), `volume_tpa` (NUMERIC), `price_per_ton` (NUMERIC), `purity_percentage` (NUMERIC), `transport_modes` (TEXT[]), `status` (TEXT), `created_at`, `updated_at`.
-* **Relationships**: `supplier_id` -> `users.id`.
-* **Indexes**: Index on `supplier_id`, `status`, and `co2_grade`.
-* **Constraints**: `volume_tpa` > 0, `price_per_ton` >= 0, `status` IN ('active', 'draft', 'fulfilled').
+## I. Existing database schema
+- `users`, `co2_listings`, `co2_requests`, `facilities`, `orders`, `alerts`, `recommendations`, `audit_contracts`, `contract_timeline_events`, `contract_versions`, `routes`.
 
-### Table: `co2_requests`
-* **Why required**: Populates the "My Requirements" tab for buyers and allows suppliers to find demand.
-* **Fields**: `id` (UUID), `buyer_id` (UUID, FK to users), `required_grade` (TEXT), `volume_needed` (NUMERIC), `target_price` (NUMERIC), `status` (TEXT), `created_at`, `updated_at`.
-* **Relationships**: `buyer_id` -> `users.id`.
-* **Indexes**: Index on `buyer_id`, `status`.
+## J. Authentication architecture
+- Frontend uses `@clerk/clerk-react`.
+- Backend uses FastAPI dependency (`app.api.dependencies.get_current_user_id`) to verify the `Authorization: Bearer <token>` against Clerk's JWKS. Identifies user by `clerk_user_id`.
 
-### Table: `facilities`
-* **Why required**: Required for the Geospatial Maps, Logistics Routing, and Telemetry SCADA monitoring.
-* **Fields**: `id` (UUID), `owner_id` (UUID, FK to users), `name` (TEXT), `type` (TEXT), `latitude` (NUMERIC), `longitude` (NUMERIC), `region` (TEXT), `operational_status` (TEXT).
-* **Relationships**: `owner_id` -> `users.id`.
-* **Indexes**: Geospatial/PostGIS index on coordinates (or standard index on lat/lon), index on `owner_id`.
+## K. Frontend → Backend mapping
+- Almost 1:1 mapping exists for all core features (Phases 1-12) as outlined in the route inventory.
 
-### Table: `orders` (Offtake Agreements)
-* **Why required**: Feeds the Orders tab, Audit Contracts, and Carbon Impact historical reporting.
-* **Fields**: `id` (UUID), `buyer_id` (UUID), `supplier_id` (UUID), `listing_id` (UUID), `volume` (NUMERIC), `total_value` (NUMERIC), `status` (TEXT), `transport_mode` (TEXT), `eta` (TIMESTAMPTZ), `created_at`, `updated_at`.
-* **Relationships**: `buyer_id` -> `users.id`, `supplier_id` -> `users.id`, `listing_id` -> `co2_listings.id`.
-* **Indexes**: Indexes on `buyer_id`, `supplier_id`, `status`.
+## L. Missing APIs
+- Advanced AI Features (Phase 13): `/api/v1/ai/insights`, `/api/v1/ai/chatbot`, `/api/v1/ai/forecast`.
+- Deep mutation endpoints (e.g., full order creation workflow).
 
-### Table: `alerts`
-* **Why required**: Populates the SCADA Alerts monitoring tab.
-* **Fields**: `id` (UUID), `facility_id` (UUID), `severity` (TEXT), `title` (TEXT), `description` (TEXT), `is_resolved` (BOOLEAN), `created_at`.
-* **Relationships**: `facility_id` -> `facilities.id`.
-* **Indexes**: Index on `facility_id`, `is_resolved`, `severity`.
+## M. Missing database tables
+- Tables for AI features (`ai_chat_logs`, `price_alerts`).
+
+## N. Security issues
+- RLS (Row Level Security) is not fully enabled on all Supabase tables.
+- `SUPABASE_SERVICE_ROLE_KEY` is used in the backend (safe), but we must ensure it never leaks to the frontend.
+
+## O. Data-model mismatches
+- Minor UI string formatting (e.g., `"₹4,500/t"`) vs database numeric fields (`price_per_ton = 4500`). The backend handles formatting currently via Pydantic or frontend mapping.
+
+## P. Google Maps requirements
+- `LogisticsRoutePlanning` and `MapsPage` currently use custom SVG mapping components, not raw Google Maps. If Google Maps is required, an API key integration is pending.
+
+## Q. Alerts/SCADA requirements
+- Currently mocked via business logic in `telemetry_service.py`. Real SCADA hardware integration is not required for the MVP.
+
+## R. Testing status
+- Basic `pytest` configuration could be added. Frontend relies on TypeScript compilation checks. No end-to-end (Playwright) tests exist yet.

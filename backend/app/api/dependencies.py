@@ -16,3 +16,21 @@ def get_current_user_id(token_data: dict = Depends(get_current_user_token)) -> s
             detail="Invalid token: missing subject"
         )
     return user_id
+
+def get_current_user(clerk_user_id: str = Depends(get_current_user_id)) -> dict:
+    from app.services.user_service import UserService
+    service = UserService()
+    user = service.get_user(clerk_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in DB")
+    return user
+
+def require_role(required_role: str):
+    def role_checker(user: dict = Depends(get_current_user)) -> dict:
+        if user.get("role") != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation not permitted. Required role: {required_role}"
+            )
+        return user
+    return role_checker

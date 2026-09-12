@@ -59,3 +59,26 @@ def test_user_sync_endpoint(mock_sync_user, mock_verify):
     response2 = client.post("/api/v1/users/sync", json={"email": "test@test.com"}, headers={"Authorization": "Bearer validtoken"})
     assert response2.status_code == 200
     assert mock_sync_user.call_count == 2
+
+@patch("app.api.dependencies.verify_clerk_token")
+@patch("app.services.user_service.UserService.update_user")
+def test_update_user_endpoint(mock_update_user, mock_verify):
+    mock_verify.return_value = {"sub": "user_123"}
+    mock_update_user.return_value = {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "clerk_user_id": "user_123",
+        "role": "buyer",
+        "email": "test@test.com",
+        "first_name": "Updated",
+        "last_name": "Name",
+        "organisation": "New Org",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+    
+    response = client.patch("/api/v1/users/me", json={"first_name": "Updated", "last_name": "Name", "organisation": "New Org"}, headers={"Authorization": "Bearer validtoken"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["first_name"] == "Updated"
+    assert data["last_name"] == "Name"
+    assert data["organisation"] == "New Org"

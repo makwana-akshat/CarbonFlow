@@ -14,6 +14,34 @@ class SyncUserRequest(BaseModel):
     last_name: Optional[str] = None
     image_url: Optional[str] = None
 
+class UpdateUserRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    organisation: Optional[str] = None
+
+@router.patch("/me", response_model=UserResponse)
+def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends(get_current_user_id)):
+    """
+    Updates the safe profile fields of the current authenticated user.
+    """
+    try:
+        user = user_service.update_user(
+            clerk_user_id=clerk_user_id,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            organisation=request.organisation
+        )
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}"
+        )
+
 @router.post("/sync", response_model=UserResponse)
 def sync_user(request: SyncUserRequest, clerk_user_id: str = Depends(get_current_user_id)):
     """

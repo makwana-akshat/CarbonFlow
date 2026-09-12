@@ -16,3 +16,14 @@ class UserService:
             "image_url": image_url
         }
         return self.user_repo.upsert_user(user_data)
+
+    def update_user(self, clerk_user_id: str, first_name: str = None, last_name: str = None, organisation: str = None) -> dict:
+        update_data = {}
+        if first_name is not None: update_data["first_name"] = first_name
+        if last_name is not None: update_data["last_name"] = last_name
+        if organisation is not None: update_data["organisation"] = organisation
+        
+        if not update_data:
+            return self.get_user(clerk_user_id)
+            
+        return self.user_repo.update_user(clerk_user_id, update_data)

@@ -22,3 +22,8 @@ class UserRepository:
             user_data, on_conflict="clerk_user_id"
         ).execute()
         return response.data[0]
+
+    def update_user(self, clerk_user_id: str, update_data: dict) -> Optional[dict]:
+        response = self.db.table("users").update(update_data).eq("clerk_user_id", clerk_user_id).execute()
+        data = response.data
+        return data[0] if data else None
