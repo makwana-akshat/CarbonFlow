@@ -2,7 +2,7 @@ import hashlib
 import json
 from datetime import datetime, date
 from uuid import UUID
-from app.schemas.contract import ContractCreate, ContractStatusUpdate, ContractVersionCreate
+from app.schemas.contract import ContractCreate, ContractStatusUpdate, ContractVersionCreate, ContractCreateFromInquiry
 
 VALID_STATUSES = ['Draft', 'Pending Review', 'Approved', 'Active', 'Completed', 'Expired', 'Cancelled']
 
@@ -120,6 +120,108 @@ class ContractService:
             "actor": "System",
             "role": "Clearing Engine",
             "action": "Drafted from marketplace order confirmation",
+            "status": "completed"
+        }).execute()
+
+        return self.get_contract(user_id, contract["id"])
+
+    def create_contract_from_inquiry(self, user_id: str, payload: ContractCreateFromInquiry):
+        # Verify inquiry
+        inquiry_res = self.supabase.table("co2_requests").select("*, buyer:users!buyer_id(id, first_name, last_name, company_name)").eq("id", str(payload.request_id)).execute()
+        if not inquiry_res.data:
+            raise ValueError("Inquiry not found")
+        inquiry = inquiry_res.data[0]
+
+        # Get listing
+        listing_res = self.supabase.table("co2_listings").select("*, supplier:users!supplier_id(id, first_name, last_name, company_name)").eq("id", str(inquiry.get("listing_id") or payload.listing_id)).execute()
+        if not listing_res.data:
+            raise ValueError("Listing not found")
+        listing = listing_res.data[0]
+        
+        # Verify access
+        if str(inquiry["buyer_id"]) != user_id and str(listing["supplier_id"]) != user_id:
+            raise PermissionError("Not authorized to create a contract for this inquiry")
+            
+        if inquiry["status"] == "cancelled":
+            raise ValueError("Cannot create contract for cancelled inquiry")
+
+        # Generate unique reference
+        contract_ref = f"CF-CTR-{datetime.now().year}-{str(payload.request_id).split('-')[0]}"
+        
+        # Check if exists
+        existing = self.supabase.table("audit_contracts").select("id").eq("contract_id", contract_ref).execute()
+        if existing.data:
+            raise ValueError("Contract already exists for this inquiry")
+
+        volume_val = float(inquiry.get("volume_needed", 0))
+        volume_str = f"{volume_val:,.0f} t"
+        price_val = float(inquiry.get("target_price") or listing.get("price_per_ton", 0))
+        price_str = f"₹{price_val:,.0f}/t"
+        
+        # Format contract value
+        val_inr = volume_val * price_val
+        if val_inr >= 10000000:
+            val_str = f"₹{val_inr/10000000:.2f} Cr"
+        elif val_inr >= 100000:
+            val_str = f"₹{val_inr/100000:.2f} L"
+        else:
+            val_str = f"₹{val_inr:,.0f}"
+
+        supplier_name = listing["supplier"].get("company_name") or f"{listing['supplier'].get('first_name', '')} {listing['supplier'].get('last_name', '')}".strip() or "Supplier"
+        buyer_name = inquiry["buyer"].get("company_name") or f"{inquiry['buyer'].get('first_name', '')} {inquiry['buyer'].get('last_name', '')}".strip() or "Buyer"
+
+        contract_data = {
+            "contract_id": contract_ref,
+            "supplier_user_id": listing["supplier_id"],
+            "buyer_user_id": inquiry["buyer_id"],
+            "supplier_name": supplier_name,
+            "buyer_name": buyer_name,
+            "volume": volume_str,
+            "volume_tonnes": volume_val,
+            "contract_value": val_str,
+            "contract_value_inr": val_inr,
+            "status": "Draft",
+            "version": "v1",
+            "purity": f"≥{inquiry.get('min_purity_required') or listing.get('purity_percentage', 99.0)}%",
+            "price_per_ton": price_str,
+            "delivery_date": str(inquiry.get("required_by_date") or datetime.now().strftime("%Y-%m-%d")),
+            "transportation_terms": f"{inquiry.get('delivery_method') or listing.get('transport_modes', ['Road'])[0]} terms apply",
+            "payment_terms": "Standard escrow net 30",
+            "iso_standard": "ISO 14064-2 Pipeline Custody Transfer",
+        }
+        
+        contract_data["audit_hash"] = generate_audit_hash(contract_data)
+        
+        # Try inserting with request_id and listing_id (requires migration 011)
+        try:
+            full_data = {**contract_data, "request_id": str(payload.request_id), "listing_id": str(listing["id"])}
+            c_res = self.supabase.table("audit_contracts").insert(full_data).execute()
+        except Exception:
+            # Fallback if migration 011 hasn't been run yet
+            c_res = self.supabase.table("audit_contracts").insert(contract_data).execute()
+            
+        contract = c_res.data[0]
+        
+        # Insert Version 1
+        self.supabase.table("contract_versions").insert({
+            "contract_id": contract["id"],
+            "version": "v1",
+            "is_current": True,
+            "summary": "Initial draft generated from marketplace inquiry",
+            "effective_date": contract_data["delivery_date"],
+            "author": "CarbonFlow Clearing Engine",
+            "changes": ["Initial baseline execution."]
+        }).execute()
+
+        # Insert Timeline Event
+        self.supabase.table("contract_timeline_events").insert({
+            "contract_id": contract["id"],
+            "step": 1,
+            "label": "Contract Drafted",
+            "timestamp_str": datetime.now().strftime("%d %b %Y, %H:%M"),
+            "actor": "System",
+            "role": "Clearing Engine",
+            "action": "Drafted from accepted buyer inquiry",
             "status": "completed"
         }).execute()
 

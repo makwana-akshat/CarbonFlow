@@ -69,6 +69,33 @@ class MarketplaceService:
         #    request_data["buyer_company_name"] = user.get("organisation", "Unknown Company")
         return self.repo.create_request(request_data)
 
+    def create_inquiry(self, clerk_user_id: str, inquiry_data: dict):
+        user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
+        if not user:
+            raise Exception("User not found in internal DB")
+
+        listing = self.repo.get_listing_by_id(inquiry_data["listing_id"])
+        if not listing:
+            raise ValueError("Target listing not found")
+        if listing.get("status") != "active":
+            raise ValueError("Target listing is no longer active")
+
+        request_payload = {
+            "buyer_id": user["id"],
+            "listing_id": inquiry_data["listing_id"],
+            "volume_needed": inquiry_data["volume_needed"],
+            "delivery_method": inquiry_data["transport_mode"],
+            "required_by_date": inquiry_data["delivery_date"] or None,
+            "application": inquiry_data.get("notes") or "Offtake Inquiry",
+            "title": f"Inquiry for {listing['facility_name']}",
+            "required_grade": listing["co2_grade"],
+            "target_price": listing["price_per_ton"],
+            "min_purity_required": listing["purity_percentage"],
+            "status": "pending"
+        }
+
+        return self.repo.create_request(request_payload)
+
     def update_request(self, clerk_user_id: str, request_id: str, update_data: dict):
         user_id = self._get_internal_user_id(clerk_user_id)
         request = self.get_request_by_id(request_id)
@@ -112,33 +139,17 @@ class MarketplaceService:
         if listing["supplier_id"] != user["id"]:
             raise PermissionError("You do not own the target listing for this inquiry")
             
-        # Create Order from Inquiry
-        from app.services.order_service import OrderService
-        order_svc = OrderService()
-        
-        volume = inquiry.get("volume_needed", 0)
-        price_per_ton = inquiry.get("target_price", listing.get("price_per_ton", 0))
-        
-        safe_order = {
-            "buyer_id": inquiry["buyer_id"],
-            "supplier_id": user["id"],
-            "listing_id": listing["id"],
-            "volume": volume,
-            "total_value": float(volume) * float(price_per_ton),
-            "transport_mode": inquiry.get("delivery_method") or listing.get("transport_modes", ["Road"])[0],
-            "status": "confirmed"
-        }
-        
-        order = order_svc.repo.create_order(safe_order)
-        
-        # Create Contract from Order
+        # Create Contract Draft directly from Inquiry (Do NOT create a final Order yet)
         from app.services.contract_service import ContractService
-        from app.schemas.contract import ContractCreate
+        from app.schemas.contract import ContractCreateFromInquiry
         contract_svc = ContractService()
         
-        contract = contract_svc.create_contract(user["id"], ContractCreate(order_id=order["id"]))
+        contract = contract_svc.create_contract_from_inquiry(
+            user["id"], 
+            ContractCreateFromInquiry(request_id=request_id)
+        )
         
         # Mark inquiry as Accepted
         self.repo.update_request(request_id, {"status": "Accepted"})
         
-        return contract
+        return {"message": "Inquiry accepted and contract drafted", "contract": contract}

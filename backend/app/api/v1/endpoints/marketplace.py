@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from app.api.dependencies import get_current_user_id, require_role, get_current_user
 from app.services.marketplace_service import MarketplaceService
-from app.schemas.marketplace import CO2ListingCreate, CO2ListingUpdate, CO2RequestCreate, CO2RequestUpdate
+from app.schemas.marketplace import CO2ListingCreate, CO2ListingUpdate, CO2RequestCreate, CO2RequestUpdate, CO2InquiryCreate
 
 router = APIRouter()
 marketplace_service = MarketplaceService()
@@ -204,8 +204,37 @@ def delete_requirement(
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/inquiries/me", response_model=List[dict])
+@router.get("/inquiries/me", response_model=list)
 def get_supplier_inquiries(user: dict = Depends(require_role("supplier"))):
-    """Supplier gets incoming inquiries (recommendations where buyer requested)."""
-    # Placeholder for supplier inquiries to prevent 404
-    return []
+    """Supplier views inquiries for their listings."""
+    try:
+        return marketplace_service.get_supplier_inquiries(user["clerk_user_id"])
+    except Exception as e:
+        if "Only suppliers" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/inquiries", response_model=dict, status_code=status.HTTP_201_CREATED)
+def create_inquiry(inquiry: CO2InquiryCreate, user: dict = Depends(require_role("buyer"))):
+    """Buyer creates an inquiry against a specific supply listing."""
+    try:
+        return marketplace_service.create_inquiry(user["clerk_user_id"], inquiry.model_dump())
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        if "no longer active" in str(e).lower():
+            raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/inquiries/{id}/accept")
+def accept_inquiry(id: str, user: dict = Depends(require_role("supplier"))):
+    """Supplier accepts an inquiry."""
+    try:
+        return marketplace_service.accept_inquiry(user["clerk_user_id"], id)
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        if "You do not own" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+

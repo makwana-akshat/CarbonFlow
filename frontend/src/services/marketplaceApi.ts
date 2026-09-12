@@ -113,6 +113,13 @@ export const deleteRequirement = async (token: string | null, id: string): Promi
   });
 };
 
+export const createInquiry = async (token: string | null, data: any): Promise<any> => {
+  return fetchWithAuth('/marketplace/inquiries', token, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
+
 export const getSupplierInquiries = async (token: string | null): Promise<any[]> => {
   return fetchWithAuth('/marketplace/inquiries/me', token);
 };

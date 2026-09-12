@@ -23,7 +23,7 @@ import {
   Map
 } from 'lucide-react';
 import { useClerk, useAuth } from '@clerk/clerk-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupplierInquiries } from '../../services/marketplaceApi';
 import { getOrders } from '../../services/orderApi';
 import type { UserRole } from '../../types/dashboard';
@@ -49,6 +49,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
   const navigate = useNavigate();
   const { signOut } = useClerk();
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     userRole,
@@ -102,6 +103,26 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const { mutate: updateRole } = useMutation({
+    mutationFn: async (role: UserRole) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) throw new Error('Failed to update role');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    }
+  });
 
   // Active Organization Info per Role
   const orgDetails = {
@@ -309,6 +330,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                     onClick={() => {
                       setUserRole(item.role);
                       setIsOrgDropdownOpen(false);
+                      updateRole(item.role);
                       showToast(`Switched persona to ${item.org} (${item.role} mode)`);
                     }}
                     className={`w-full flex items-start gap-2.5 p-2 rounded-[var(--radius-chip)] text-left transition-colors ${

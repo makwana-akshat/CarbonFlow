@@ -61,6 +61,27 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   const queryClient = useQueryClient();
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
 
+  // Mutation to sync backend role when toggling top-right persona
+  const { mutate: updateRole } = useMutation({
+    mutationFn: async (role: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) throw new Error('Failed to update role');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    }
+  });
+
   // Fetch Supplier Inquiries
   const { data: supplierInquiries, isLoading: isLoadingInquiries } = useQuery({
     queryKey: ['supplier-inquiries'],
@@ -84,10 +105,11 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
         navigate(`/app/audit-contracts`);
       }
     },
-    onError: (error) => {
-      showToast('Failed to accept inquiry.');
+    onError: (error: any) => {
+      const msg = error.response?.data?.detail || 'Failed to accept inquiry and draft contract.';
+      showToast(msg);
       console.error(error);
-    }
+    },
   });
 
   const [inquiriesList, setInquiriesList] = useState<any[]>([]);

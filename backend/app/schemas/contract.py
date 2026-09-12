@@ -6,6 +6,9 @@ import uuid
 class ContractCreate(BaseModel):
     order_id: uuid.UUID
 
+class ContractCreateFromInquiry(BaseModel):
+    request_id: uuid.UUID
+
 class ContractStatusUpdate(BaseModel):
     status: str
 
