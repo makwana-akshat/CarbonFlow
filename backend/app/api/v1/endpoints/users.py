@@ -18,6 +18,7 @@ class UpdateUserRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     organisation: Optional[str] = None
+    role: Optional[str] = None
 
 @router.patch("/me", response_model=UserResponse)
 def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends(get_current_user_id)):
@@ -29,7 +30,8 @@ def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends
             clerk_user_id=clerk_user_id,
             first_name=request.first_name,
             last_name=request.last_name,
-            organisation=request.organisation
+            organisation=request.organisation,
+            role=request.role
         )
         if not user:
             raise HTTPException(status_code=404, detail="User not found")

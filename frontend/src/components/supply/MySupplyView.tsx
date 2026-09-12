@@ -64,14 +64,14 @@ export const MySupplyView: React.FC = () => {
         // Map API response to UI model
         const items = (res.items || []).map((item: any) => ({
           id: item.id,
-          facilityName: item.facility_name || 'Registered Supply Plant',
-          sourceType: item.source_type || 'Industrial Carbon Capture',
-          co2Grade: item.co2_grade || 'Standard Purity',
-          purity: item.purity_percentage || 98.5,
-          volumeTpa: item.volume_tpa || 5000,
-          pricePerTon: item.price_per_ton || 4500,
-          transportMode: Array.isArray(item.transport_modes) ? item.transport_modes[0] : 'Pipeline-ready',
-          location: item.location || 'Gujarat Industrial Cluster',
+          facilityName: item.facility_name || 'N/A',
+          sourceType: item.source_type || 'Unknown Source',
+          co2Grade: item.co2_grade || 'Unknown Grade',
+          purity: item.purity_percentage || 0,
+          volumeTpa: item.volume_tpa || 0,
+          pricePerTon: item.price_per_ton || 0,
+          transportMode: Array.isArray(item.transport_modes) && item.transport_modes.length > 0 ? item.transport_modes[0] : 'N/A',
+          location: item.location || 'N/A',
           status: item.status || 'active',
           buyerRequestsCount: 0, // Demand requirements are not currently mapped back to listings directly
           postedDate: new Date(item.created_at || Date.now()).toLocaleDateString('en-US', {
@@ -131,12 +131,22 @@ export const MySupplyView: React.FC = () => {
       showToast(`New listing successfully published.`);
       // Reset Form
       setFormFacility('');
-      setFormVolume('10000');
-      setFormPrice('5200');
+      setFormVolume('');
+      setFormPrice('');
+      setFormPurity('');
+      setFormLocation('');
     },
-    onError: (error) => {
-      showToast('Failed to create listing.');
-      console.error(error);
+    onError: (error: any) => {
+      let errorMsg = 'Failed to create listing.';
+      if (error?.message) {
+        if (error.message.includes('422')) errorMsg = 'Validation Error: Please check all form fields.';
+        else if (error.message.includes('403')) errorMsg = 'Permission Denied: Please verify your Supplier role.';
+        else if (error.message.includes('401')) errorMsg = 'Authentication Failed: Please sign in again.';
+        else if (error.message.includes('500')) errorMsg = 'Server Error: The database encountered a problem.';
+        else errorMsg = `Error: ${error.message}`;
+      }
+      showToast(errorMsg);
+      console.error('Create listing failed:', error);
     }
   });
 
@@ -159,17 +169,39 @@ export const MySupplyView: React.FC = () => {
   // Form State for + New Listing
   const [formFacility, setFormFacility] = useState('');
   const [formSource, setFormSource] = useState('Direct Air Capture (DAC)');
-  const [formPurity, setFormPurity] = useState('99.5');
-  const [formVolume, setFormVolume] = useState('10000');
-  const [formPrice, setFormPrice] = useState('5200');
+  const [formPurity, setFormPurity] = useState('');
+  const [formVolume, setFormVolume] = useState('');
+  const [formPrice, setFormPrice] = useState('');
   const [formTransport, setFormTransport] = useState('Pipeline-ready');
-  const [formLocation, setFormLocation] = useState('Dahej Corridor, Gujarat');
+  const [formLocation, setFormLocation] = useState('');
   const [formGrade, setFormGrade] = useState('Ultra-Pure Food/Beverage');
 
   const handleCreateListing = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formFacility.trim()) {
-      showToast('Facility name is required');
+      showToast('Facility name is required.');
+      return;
+    }
+    if (!formLocation.trim()) {
+      showToast('Dispatch Location is required.');
+      return;
+    }
+
+    const volume = parseInt(formVolume, 10);
+    if (isNaN(volume) || volume <= 0) {
+      showToast('Volume must be a valid number greater than zero.');
+      return;
+    }
+
+    const price = parseFloat(formPrice);
+    if (isNaN(price) || price < 0) {
+      showToast('Price must be a valid non-negative number.');
+      return;
+    }
+
+    const purity = parseFloat(formPurity);
+    if (isNaN(purity) || purity <= 0 || purity > 100) {
+      showToast('Purity must be a valid percentage between 0 and 100.');
       return;
     }
 
@@ -177,13 +209,12 @@ export const MySupplyView: React.FC = () => {
       facility_name: formFacility.trim(),
       source_type: formSource,
       co2_grade: formGrade,
-      purity_percentage: parseFloat(formPurity) || 99.0,
-      volume_tpa: parseInt(formVolume, 10) || 5000,
-      price_per_ton: parseInt(formPrice, 10) || 4800,
+      purity_percentage: purity,
+      volume_tpa: volume,
+      price_per_ton: price,
       transport_modes: [formTransport],
-      location: formLocation,
+      location: formLocation.trim(),
       status: 'active',
-      notes: 'Freshly registered output stream.',
     });
   };
 

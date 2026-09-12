@@ -203,3 +203,26 @@ def delete_requirement(
         if "Not authorized" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/inquiries/me", response_model=list)
+def get_supplier_inquiries(user: dict = Depends(require_role("supplier"))):
+    """Supplier views inquiries for their listings."""
+    try:
+        return marketplace_service.get_supplier_inquiries(user["clerk_user_id"])
+    except Exception as e:
+        if "Only suppliers" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/inquiries/{id}/accept")
+def accept_inquiry(id: str, user: dict = Depends(require_role("supplier"))):
+    """Supplier accepts an inquiry."""
+    try:
+        return marketplace_service.accept_inquiry(user["clerk_user_id"], id)
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        if "You do not own" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+

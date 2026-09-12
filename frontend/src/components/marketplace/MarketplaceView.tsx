@@ -100,15 +100,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         const mappedListings: SupplyListing[] = listingsItems.map((l: any) => ({
           id: l.id,
           companyName: (l.users?.first_name ? `${l.users.first_name} ${l.users.last_name || ''}`.trim() : 'Unknown Supplier'),
-          facilityType: l.facility_name,
-          location: l.location || 'Unknown Location',
-          sourceType: l.source_type || 'Mixed',
-          purity: l.purity_percentage,
-          physicalState: l.transport_modes.includes('Pipeline') ? 'Gas' : 'Liquefied',
-          availableQuantity: l.volume_tpa,
-          pricePerTon: l.price_per_ton,
+          facilityType: l.facility_name || 'N/A',
+          location: l.location || 'N/A',
+          sourceType: l.source_type || 'Unknown Source',
+          purity: l.purity_percentage || 0,
+          physicalState: Array.isArray(l.transport_modes) && l.transport_modes.includes('Pipeline') ? 'Gas' : 'Liquefied',
+          availableQuantity: l.volume_tpa || 0,
+          pricePerTon: l.price_per_ton || 0,
           distanceKm: l.distance_km || 0,
-          availabilityWindow: l.availability_window || 'Immediate',
+          availabilityWindow: l.availability_window || 'N/A',
           isVerified: !!l.is_verified,
         }));
         setApiListings(mappedListings);
@@ -117,12 +117,12 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         const mappedReqs: DemandRequirement[] = reqsItems.map((r: any) => ({
           id: r.id,
           buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
-          industry: r.application || 'General Industrial',
+          industry: r.application || 'N/A',
           application: r.required_grade || r.application || 'Unknown',
-          location: r.location || 'Unknown Location',
-          minPurityRequired: r.min_purity_required || 99.0,
-          quantityNeeded: r.volume_needed,
-          maxPricePerTon: r.target_price,
+          location: r.location || 'N/A',
+          minPurityRequired: r.min_purity_required || 0,
+          quantityNeeded: r.volume_needed || 0,
+          maxPricePerTon: r.target_price || 0,
           maxDistanceKm: 1000, // Still not in DB but not critical
         }));
         setApiRequirements(mappedReqs);

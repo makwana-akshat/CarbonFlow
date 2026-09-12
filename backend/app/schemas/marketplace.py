@@ -1,15 +1,15 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from datetime import datetime
 import uuid
 
 class CO2ListingBase(BaseModel):
-    facility_name: str
-    co2_grade: str
-    volume_tpa: float
-    price_per_ton: float
-    purity_percentage: float
-    transport_modes: List[str]
+    facility_name: str = Field(..., min_length=1, description="Must not be empty")
+    co2_grade: str = Field(..., min_length=1)
+    volume_tpa: float = Field(..., gt=0, description="Volume must be greater than zero")
+    price_per_ton: float = Field(..., ge=0, description="Price must be non-negative")
+    purity_percentage: float = Field(..., ge=0, le=100, description="Purity must be between 0 and 100")
+    transport_modes: List[str] = Field(..., min_length=1)
     status: str = "active"
     location: Optional[str] = None
     distance_km: Optional[float] = 0

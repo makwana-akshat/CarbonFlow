@@ -61,6 +61,27 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   const queryClient = useQueryClient();
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
 
+  // Mutation to sync backend role when toggling top-right persona
+  const { mutate: updateRole } = useMutation({
+    mutationFn: async (role: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) throw new Error('Failed to update role');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    }
+  });
+
   // Fetch Supplier Inquiries
   const { data: supplierInquiries, isLoading: isLoadingInquiries } = useQuery({
     queryKey: ['supplier-inquiries'],
@@ -361,6 +382,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                 type="button"
                 onClick={() => {
                   setUserRole('buyer');
+                  updateRole('buyer');
                   showToast('Switched to Buyer Mode');
                 }}
                 className={`px-3 py-1 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors ${
@@ -375,6 +397,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                 type="button"
                 onClick={() => {
                   setUserRole('supplier');
+                  updateRole('supplier');
                   showToast('Switched to Supplier Mode');
                 }}
                 className={`px-3 py-1 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors ${
