@@ -14,8 +14,13 @@ import { useAuth } from '@clerk/clerk-react';
 import { getContracts, getComplianceSummary } from '../../services/contractsApi';
 
 export const AuditContractsPage: React.FC = () => {
-  const [contracts, setContracts] = useState<AuditContractItem[]>(AUDIT_CONTRACTS_DATA);
-  const [summary, setSummary] = useState(COMPLIANCE_SUMMARY);
+  const [contracts, setContracts] = useState<AuditContractItem[]>([]);
+  const [summary, setSummary] = useState({
+    activeContracts: 0,
+    pendingApproval: 0,
+    completed: 0,
+    withAmendments: 0
+  });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AuditContractStatus | 'All'>('All');
   const [dateFilter, setDateFilter] = useState<string>('all');
