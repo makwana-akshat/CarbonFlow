@@ -17,7 +17,17 @@ class SyncUserRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    organisation: Optional[str] = None
+    phone: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    co2_capacity: Optional[str] = None
+    facility_location: Optional[str] = None
+    is_verified: Optional[bool] = None
+    notif_price_alerts: Optional[bool] = None
+    notif_supply_alerts: Optional[bool] = None
+    notif_order_updates: Optional[bool] = None
+    notif_contract_notifs: Optional[bool] = None
     role: Optional[str] = None
 
 @router.patch("/me", response_model=UserResponse)
@@ -30,7 +40,17 @@ def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends
             clerk_user_id=clerk_user_id,
             first_name=request.first_name,
             last_name=request.last_name,
-            organisation=request.organisation,
+            phone=request.phone,
+            job_title=request.job_title,
+            company_name=request.company_name,
+            industry=request.industry,
+            co2_capacity=request.co2_capacity,
+            facility_location=request.facility_location,
+            is_verified=request.is_verified,
+            notif_price_alerts=request.notif_price_alerts,
+            notif_supply_alerts=request.notif_supply_alerts,
+            notif_order_updates=request.notif_order_updates,
+            notif_contract_notifs=request.notif_contract_notifs,
             role=request.role
         )
         if not user:

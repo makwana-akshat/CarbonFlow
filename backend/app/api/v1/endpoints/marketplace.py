@@ -203,3 +203,9 @@ def delete_requirement(
         if "Not authorized" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/inquiries/me", response_model=List[dict])
+def get_supplier_inquiries(user: dict = Depends(require_role("supplier"))):
+    """Supplier gets incoming inquiries (recommendations where buyer requested)."""
+    # Placeholder for supplier inquiries to prevent 404
+    return []

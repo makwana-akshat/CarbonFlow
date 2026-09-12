@@ -155,6 +155,15 @@ export const MySupplyView: React.FC = () => {
     }
   };
 
+  const { data: dbUser } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return null;
+      return fetchWithAuth('/users/me', token);
+    }
+  });
+
   // Form State for + New Listing
   const [formFacility, setFormFacility] = useState('');
   const [formSource, setFormSource] = useState('Direct Air Capture (DAC)');
@@ -164,6 +173,17 @@ export const MySupplyView: React.FC = () => {
   const [formTransport, setFormTransport] = useState('Pipeline-ready');
   const [formLocation, setFormLocation] = useState('Dahej Corridor, Gujarat');
   const [formGrade, setFormGrade] = useState('Ultra-Pure Food/Beverage');
+
+  useEffect(() => {
+    if (dbUser) {
+      if (dbUser.company_name && !formFacility) {
+        setFormFacility(dbUser.company_name + ' Node 1');
+      }
+      if (dbUser.facility_location && formLocation === 'Dahej Corridor, Gujarat') {
+        setFormLocation(dbUser.facility_location);
+      }
+    }
+  }, [dbUser]);
 
   const handleCreateListing = (e: React.FormEvent) => {
     e.preventDefault();
