@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useClerk, useAuth } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
-import { getSupplierInquiries } from '../../services/api';
+import { getSupplierInquiries } from '../../services/marketplaceApi';
 import { getOrders } from '../../services/orderApi';
 import type { UserRole } from '../../types/dashboard';
 import { useAppStore } from '../../store/useAppStore';

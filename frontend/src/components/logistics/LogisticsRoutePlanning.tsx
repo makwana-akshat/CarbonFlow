@@ -3,7 +3,9 @@ import type { Shipment, TransportModeId } from './types';
 import { SAMPLE_SHIPMENTS, getEligibleModes, getRouteOptionsForMode } from './mockShipments';
 import { LogisticsMap } from './LogisticsMap';
 import { useAuth } from '@clerk/clerk-react';
-import { calculateRoute } from '../../services/logisticsApi';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { calculateRoute, fetchShipment } from '../../services/logisticsApi';
 import { ModeSelectorPanel } from './ModeSelectorPanel';
 import { RouteOptionsPanel } from './RouteOptionsPanel';
 import { BigStatReadouts } from './BigStatReadouts';
@@ -33,23 +35,29 @@ interface LogisticsRoutePlanningProps {
 }
 
 export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
-  initialShipment = SAMPLE_SHIPMENTS[0],
   onBackToOrders,
   onRequestUpgrade,
   onOpenMobileMenu,
   className = '',
 }) => {
-  // Scenario state: allows quick switching between demo states
-  const [selectedScenarioIndex, setSelectedScenarioIndex] = useState<number>(0);
-  const [isScenarioDropdownOpen, setIsScenarioDropdownOpen] = useState(false);
-  const [forcedState, setForcedState] = useState<'normal' | 'loading' | 'no-route'>('normal');
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('orderId');
+  const { getToken } = useAuth();
 
-  // Active shipment object
-  const currentShipment = SAMPLE_SHIPMENTS[selectedScenarioIndex] || initialShipment;
+  // Fetch real shipment data from backend using orderId
+  const { data: currentShipment, isLoading: isLoadingShipment, error: shipmentError } = useQuery({
+    queryKey: ['shipment', orderId],
+    queryFn: async () => {
+      if (!orderId) throw new Error('No order ID provided');
+      const token = await getToken();
+      return fetchShipment(token, orderId);
+    },
+    enabled: !!orderId,
+  });
 
   // Mode eligibility calculations based on shipment specs
   const eligibleModes = useMemo(() => {
-    return getEligibleModes(currentShipment);
+    return currentShipment ? getEligibleModes(currentShipment) : [];
   }, [currentShipment]);
 
   // Selected mode state (defaults to recommended eligible mode)
@@ -68,23 +76,26 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
 
   // Resets to expanded by default each time a new shipment is loaded per spec
   useEffect(() => {
-    setIsModeCollapsed(false);
-    setIsRouteCollapsed(false);
-    setIsAdvisoryCollapsed(false);
-    setIsKpiCollapsed(false);
-  }, [currentShipment.id]);
+    if (currentShipment?.id) {
+      setIsModeCollapsed(false);
+      setIsRouteCollapsed(false);
+      setIsAdvisoryCollapsed(false);
+      setIsKpiCollapsed(false);
+    }
+  }, [currentShipment?.id]);
 
-  // Sync selectedModeId when scenario changes
+  // Sync selectedModeId when shipment changes
   useEffect(() => {
-    setSelectedModeId(defaultModeId);
+    if (defaultModeId) setSelectedModeId(defaultModeId);
   }, [defaultModeId]);
 
   const [availableRoutes, setAvailableRoutes] = useState<any[]>([]);
 
-  const { getToken } = useAuth();
+
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
+        if (!currentShipment) return;
         const token = await getToken();
         if (!token) return;
         const opts = await calculateRoute(
@@ -106,7 +117,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
   }, [currentShipment, selectedModeId, getToken]);
 
   const defaultRoutes = useMemo(() => {
-    return getRouteOptionsForMode(currentShipment, selectedModeId);
+    return currentShipment ? getRouteOptionsForMode(currentShipment, selectedModeId) : [];
   }, [currentShipment, selectedModeId]);
 
   const effectiveRoutes = availableRoutes.length > 0 ? availableRoutes : defaultRoutes;
@@ -126,7 +137,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
   const activeWarnings: WarningItem[] = useMemo(() => {
     const list: WarningItem[] = [];
 
-    if (currentShipment.purity < 97.0) {
+    if (currentShipment && currentShipment.purity < 97.0) {
       list.push({
         id: 'warn-purity-fallback',
         type: 'warning',
@@ -135,7 +146,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
       });
     }
 
-    if (currentShipment.status === 'in-transit' && activeRoute?.id === 'ROUTE-A') {
+    if (currentShipment?.status === 'in-transit' && activeRoute?.id === 'ROUTE-A') {
       list.push({
         id: 'warn-express-corridor',
         type: 'warning',
@@ -173,37 +184,34 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
       {/* ========================================================================= */}
       {/* 1. EDGE STATES: SKELETON LOADING OR UNVIABLE ROUTE ======================= */}
       {/* ========================================================================= */}
-      {forcedState === 'loading' ? (
+      {isLoadingShipment ? (
         <div className="flex-1 w-full p-6 flex flex-col gap-4 animate-pulse z-20">
           <div className="flex-1 w-full rounded-2xl bg-gray-200 border border-gray-300 relative overflow-hidden" />
           <div className="text-center text-[12px] text-gray-500">
             Connecting real-time geospatial telemetry nodes...
           </div>
         </div>
-      ) : forcedState === 'no-route' ? (
+      ) : !currentShipment || shipmentError ? (
         <div className="flex-1 w-full flex items-center justify-center p-6 z-20">
           <div className="max-w-md w-full rounded-2xl border border-red-200 bg-white p-8 text-center shadow-lg space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 mx-auto">
               <AlertOctagon className="w-7 h-7" />
             </div>
             <h3 className="text-[18px] font-bold text-gray-900 tracking-tight">
-              No Viable Transport Route
+              {shipmentError ? "Logistics Node Offline" : "No Active Route Context"}
             </h3>
             <p className="text-[13px] text-gray-600 leading-relaxed">
-              No viable transport route qualifies for this shipment's current assay specs and destination distance. Supercritical pipeline trunk requires 97%+ purity, and cryogenic ISO tankers require &gt;99% purity.
+              {shipmentError 
+                ? "Failed to authenticate or fetch live telemetry context for this shipment ID. Please ensure your permissions are elevated."
+                : "No active shipment or tracking order was provided in the context matrix. Please select an active order from your centralized dashboard to route."
+              }
             </p>
             <div className="pt-2 flex flex-col gap-2">
               <button
-                onClick={onRequestUpgrade || (() => setForcedState('normal'))}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#F4611E] text-white font-semibold text-[13px] hover:bg-[#F4611E]/90 transition-all shadow-md shadow-[#F4611E]/20 cursor-pointer"
+                onClick={onBackToOrders}
+                className="w-full py-2.5 px-4 rounded-xl bg-[var(--accent-primary)] text-white font-semibold text-[13px] hover:bg-[var(--accent-primary)]/90 transition-all shadow-md cursor-pointer"
               >
-                Request Assay Upgrade / Pre-Treatment
-              </button>
-              <button
-                onClick={() => setForcedState('normal')}
-                className="w-full py-2 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-[12px] font-semibold transition-colors cursor-pointer"
-              >
-                Return to Routing Engine
+                Return to Active Orders
               </button>
             </div>
           </div>

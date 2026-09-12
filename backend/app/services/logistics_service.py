@@ -69,5 +69,72 @@ class LogisticsService:
             riskLevel="Medium",
             steps=[f"Loading at {origin.split(',')[0]}", "Highway Transit", f"Unloading at {destination.split(',')[0]}"]
         ))
-        
         return routes
+
+    def get_shipment_for_order(self, order_id: str, clerk_user_id: str):
+        from app.repositories.order_repository import OrderRepository
+        from app.repositories.marketplace_repository import MarketplaceRepository
+        from app.repositories.user_repository import UserRepository
+
+        # Fetch basic roles and permissions
+        user_repo = UserRepository()
+        user = user_repo.get_user_by_clerk_id(clerk_user_id)
+        if not user:
+            raise Exception("User not found")
+
+        # Fetch Order
+        order_repo = OrderRepository()
+        order = order_repo.get_order_by_id(order_id)
+        if not order:
+            raise Exception("Order not found")
+
+        # Access check
+        if user["role"] == "buyer" and order["buyer_id"] != user["id"]:
+            raise Exception("Unauthorized to view this logistics manifest")
+        if user["role"] == "supplier" and order["supplier_id"] != user["id"]:
+            raise Exception("Unauthorized to view this logistics manifest")
+
+        # Fetch Listing (Origin Details)
+        market_repo = MarketplaceRepository()
+        listing = market_repo.get_listing_by_id(order["listing_id"]) if order.get("listing_id") else None
+
+        # Format Origin
+        origin_name = listing.get("facility_name", "Unknown Origin") if listing else "Unknown Origin"
+        origin_city = listing.get("location_name", "Unknown Location") if listing else "Unknown Location"
+        origin_lat = listing.get("latitude", 22.0) if listing else 22.0
+        origin_lng = listing.get("longitude", 72.0) if listing else 72.0
+
+        # Format Destination (Buyer context)
+        buyer_details = order.get("buyer", {})
+        # If no strict facility for buyer, use generic city helper or fallback
+        dest_name = f"{buyer_details.get('first_name', 'Buyer')} Facility"
+        dest_city = "Ahmedabad, Gujarat" # Generic fallback if we don't have a co2_requests relation
+        dest_lat, dest_lng = get_city_coords("Ahmedabad")
+
+        # Construct Shipment shape for frontend
+        shipment = {
+            "id": f"SHP-{order['id'].split('-')[0].upper()}",
+            "emitterLocation": {
+                "name": origin_name,
+                "facility": "Capture Node",
+                "city": origin_city.split(",")[0],
+                "state": origin_city.split(",")[1].strip() if "," in origin_city else "",
+                "coordinates": [origin_lat, origin_lng]
+            },
+            "buyerLocation": {
+                "name": dest_name,
+                "facility": "Offtake Terminal",
+                "city": dest_city.split(",")[0],
+                "state": dest_city.split(",")[1].strip() if "," in dest_city else "",
+                "coordinates": [dest_lat, dest_lng]
+            },
+            "volume": float(order.get("volume", 0)),
+            "purity": float(listing.get("purity_percentage", 99.0)) if listing else 99.0,
+            "physicalState": "liquefied" if order.get("transport_mode", "").lower() in ["road", "rail"] else "gas",
+            "status": order.get("status", "scheduled"),
+            "scheduledDispatch": order.get("eta") or "Pending Allocation",
+            "orderRef": f"ORD-{order['id'].split('-')[0].upper()}",
+            "isLiveTelemetry": False # True if connected to real sensor
+        }
+
+        return shipment
