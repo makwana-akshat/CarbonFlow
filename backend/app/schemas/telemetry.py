@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import uuid
 
@@ -26,27 +26,40 @@ class FacilityMonitoringResponse(BaseModel):
     id: str
     facility: str
     region: str
-    captureOutput: int
-    expectedOutput: int
+    captureOutput: Optional[float] = None
+    expectedOutput: Optional[float] = None
     status: str
     lastUpdate: str
-    designCapacity: str
+    designCapacity: Optional[str] = None
 
 class ShipmentMonitoringResponse(BaseModel):
     id: str
     shipmentId: str
-    route: str
+    route: Optional[str] = None
     origin: str
     destination: str
     mode: str
-    eta: str
+    eta: Optional[str] = None
     status: str
     risk: str
-    volume: str
-    carrier: str
+    volume: Optional[str] = None
+    carrier: Optional[str] = None
 
 class OperationalSummary(BaseModel):
     critical: int
     warnings: int
     active: int
     resolvedToday: int
+
+class StatusBreakdown(BaseModel):
+    label: str
+    count: int
+    color: str
+
+class OperationsCategory(BaseModel):
+    category: str
+    total: int
+    breakdown: List[StatusBreakdown]
+
+class OperationsHealthIndexResponse(BaseModel):
+    categories: List[OperationsCategory]

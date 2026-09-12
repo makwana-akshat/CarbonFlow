@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, ChevronDown } from 'lucide-react';
-import type { AlertSeverity } from '../../data/alertsMock';
+import type { AlertSeverity } from '../../types/alerts';
 
 export interface AlertsHeaderProps {
   selectedSeverity: AlertSeverity | 'all';

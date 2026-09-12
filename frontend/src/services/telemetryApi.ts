@@ -1,7 +1,8 @@
 import { fetchWithAuth } from './api';
+import type { OperationsHealthIndexResponse } from '../types/alerts';
 
-export const getActiveAlerts = async (token: string | null): Promise<any[]> => {
-  return fetchWithAuth('/telemetry/alerts', token);
+export const getActiveAlerts = async (token: string | null, severity: string = 'all', timeWindow: string = '24h'): Promise<any[]> => {
+  return fetchWithAuth(`/telemetry/alerts?severity=${severity}&time_window=${timeWindow}`, token);
 };
 
 export const getAlertHistory = async (token: string | null): Promise<any[]> => {
@@ -30,3 +31,8 @@ export const getFacilitiesMonitoring = async (token: string | null): Promise<any
 export const getShipmentsMonitoring = async (token: string | null): Promise<any[]> => {
   return fetchWithAuth('/telemetry/shipments/monitoring', token);
 };
+
+export const getOperationsHealthIndex = async (token: string | null): Promise<OperationsHealthIndexResponse> => {
+  return fetchWithAuth('/telemetry/operations/health-index', token);
+};
+

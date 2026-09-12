@@ -149,6 +149,25 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     ? activeOrdersData.filter((o: any) => o.status !== 'cancelled' && o.status !== 'delivered').length 
     : 0;
 
+  // Fetch active alerts for badge count
+  const { data: activeAlertsData } = useQuery({
+    queryKey: ['activeAlertsCount'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return [];
+      // We could use getAlertSummary but for simplicity we can just fetch getActiveAlerts
+      // Alternatively we can fetch getActiveAlerts from telemetryApi. We'll import it above.
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/telemetry/alerts?severity=all&time_window=all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    }
+  });
+  const activeAlertsCount = activeAlertsData ? activeAlertsData.length : 0;
+
   // Role-Aware Main Navigation Items with strictly unique paths
   const mainNavItems: NavItemConfig[] = userRole === 'buyer' ? [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -173,7 +192,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
   // Impact & Reporting items with unique paths
   const impactNavItems: NavItemConfig[] = [
     { path: '/app/carbon-impact', label: 'Carbon Impact', icon: Leaf },
-    { path: '/app/alerts', label: 'Alerts & SCADA', icon: Bell, badge: '2' },
+    { path: '/app/alerts', label: 'Alerts & SCADA', icon: Bell, badge: activeAlertsCount > 0 ? activeAlertsCount : undefined },
     { path: '/app/audit-contracts', label: 'Audit Contracts', icon: ShieldCheck },
   ];
 

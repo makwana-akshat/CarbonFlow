@@ -1,6 +1,6 @@
 import React from 'react';
 import { Truck, Train, GitCommit } from 'lucide-react';
-import { type ShipmentMonitoringItem } from '../../data/alertsMock';
+import { type ShipmentMonitoringItem } from '../../types/alerts';
 
 export interface ShipmentMonitoringTableProps {
   shipments: ShipmentMonitoringItem[];

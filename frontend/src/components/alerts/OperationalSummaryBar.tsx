@@ -1,5 +1,5 @@
 import React from 'react';
-import type { OperationalSummary } from '../../data/alertsMock';
+import type { OperationalSummary } from '../../types/alerts';
 
 export interface OperationalSummaryBarProps {
   summary: OperationalSummary;

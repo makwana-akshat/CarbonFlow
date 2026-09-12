@@ -4,7 +4,7 @@ import {
   CheckCircle2, 
   ChevronRight
 } from 'lucide-react';
-import type { ActiveAlertItem, AlertSeverity } from '../../data/alertsMock';
+import { type ActiveAlertItem, type AlertSeverity } from '../../types/alerts';
 
 export interface ActiveAlertsListProps {
   alerts: ActiveAlertItem[];

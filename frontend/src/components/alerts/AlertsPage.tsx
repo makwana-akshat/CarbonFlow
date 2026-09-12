@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertsHeader } from './AlertsHeader';
 import { OperationalSummaryBar } from './OperationalSummaryBar';
 import { ActiveAlertsList } from './ActiveAlertsList';
@@ -13,8 +13,9 @@ import {
   type FacilityMonitoringItem,
   type ShipmentMonitoringItem,
   type AlertHistoryItem,
-  type OperationalSummary
-} from '../../data/alertsMock';
+  type OperationalSummary,
+  type OperationsHealthIndexResponse
+} from '../../types/alerts';
 import { Toast } from '../ui/Feedback';
 import { useAuth } from '@clerk/clerk-react';
 import { 
@@ -24,7 +25,8 @@ import {
   acknowledgeAlert, 
   resolveAlert, 
   getFacilitiesMonitoring, 
-  getShipmentsMonitoring 
+  getShipmentsMonitoring,
+  getOperationsHealthIndex
 } from '../../services/telemetryApi';
 
 export const AlertsPage: React.FC = () => {
@@ -33,6 +35,7 @@ export const AlertsPage: React.FC = () => {
   const [summary, setSummary] = useState<OperationalSummary | null>(null);
   const [facilities, setFacilities] = useState<FacilityMonitoringItem[]>([]);
   const [shipments, setShipments] = useState<ShipmentMonitoringItem[]>([]);
+  const [healthIndex, setHealthIndex] = useState<OperationsHealthIndexResponse | null>(null);
   
   const [selectedSeverity, setSelectedSeverity] = useState<AlertSeverity | 'all'>('all');
   const [timeWindow, setTimeWindow] = useState<string>('24h');
@@ -52,12 +55,13 @@ export const AlertsPage: React.FC = () => {
       const token = await getToken();
       if (!token) return;
       
-      const [alertsData, historyData, summaryData, facilitiesData, shipmentsData] = await Promise.all([
-        getActiveAlerts(token),
+      const [alertsData, historyData, summaryData, facilitiesData, shipmentsData, healthData] = await Promise.all([
+        getActiveAlerts(token, selectedSeverity, timeWindow),
         getAlertHistory(token),
         getAlertSummary(token),
         getFacilitiesMonitoring(token),
-        getShipmentsMonitoring(token)
+        getShipmentsMonitoring(token),
+        getOperationsHealthIndex(token)
       ]);
       
       if (alertsData) {
@@ -82,25 +86,33 @@ export const AlertsPage: React.FC = () => {
         setAlerts(mapped);
       }
       
-      if (historyData) setHistory(historyData);
+      if (historyData) {
+        const historyMapped: AlertHistoryItem[] = historyData.map((h: any) => ({
+          id: h.id,
+          severity: h.severity,
+          title: h.title,
+          timestamp: h.created_at,
+          resolvedBy: h.extra_fields?.resolved_by || 'System',
+          resolutionNote: h.extra_fields?.resolution_note || 'Resolved',
+          facilityOrRegion: h.facilities?.name || 'Unknown',
+          resolvedTime: h.extra_fields?.resolved_time ? new Date(h.extra_fields.resolved_time).toLocaleTimeString() : 'Recently'
+        }));
+        setHistory(historyMapped);
+      }
       if (summaryData) setSummary(summaryData);
       if (facilitiesData) setFacilities(facilitiesData);
       if (shipmentsData) setShipments(shipmentsData);
+      if (healthData) setHealthIndex(healthData);
       
     } catch (err) {
       console.error(err);
+      showToast('Error loading operational data');
     }
   };
 
   useEffect(() => {
     fetchData();
-  }, [getToken]);
-
-  // Filtered alerts
-  const filteredAlerts = useMemo(() => {
-    if (selectedSeverity === 'all') return alerts;
-    return alerts.filter((a) => a.severity === selectedSeverity);
-  }, [alerts, selectedSeverity]);
+  }, [getToken, selectedSeverity, timeWindow]);
 
   const handleSelectAlert = (alert: ActiveAlertItem) => {
     setSelectedAlert(alert);
@@ -136,11 +148,10 @@ export const AlertsPage: React.FC = () => {
       const token = await getToken();
       await resolveAlert(token, alertId, note);
       
-      // Remove from active alerts list
       setAlerts((prev) => prev.filter((a) => a.id !== alertId));
       setIsDrawerOpen(false);
       showToast(`Alert ${alertId} resolved successfully.`);
-      fetchData(); // Refresh summary and history
+      fetchData();
     } catch (e) {
       showToast(`Failed to resolve alert`);
     }
@@ -164,14 +175,12 @@ export const AlertsPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-6 pb-16 animate-fade-in text-left">
-      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 left-6 z-50 animate-in fade-in slide-in-from-bottom-2">
           <Toast variant="info" message={toastMessage} onClose={() => setToastMessage(null)} />
         </div>
       )}
 
-      {/* 1. Header with severity controls & time window */}
       <AlertsHeader
         selectedSeverity={selectedSeverity}
         onSelectSeverity={setSelectedSeverity}
@@ -180,7 +189,6 @@ export const AlertsPage: React.FC = () => {
         totalAlertsCount={alerts.length}
       />
 
-      {/* 2. Operational Summary Bar (Restrained status metrics) */}
       {summary && (
         <OperationalSummaryBar
           summary={summary}
@@ -189,26 +197,21 @@ export const AlertsPage: React.FC = () => {
         />
       )}
 
-      {/* 3. Main Active Alerts Feed */}
       <ActiveAlertsList
-        alerts={filteredAlerts}
+        alerts={alerts}
         onSelectAlert={handleSelectAlert}
         onActionClick={handleActionClick}
       />
 
-      {/* 4. Operational Network Status Index */}
-      <OperationalNetworkStatus />
+      <OperationalNetworkStatus healthIndex={healthIndex} />
 
-      {/* 5. Facility & Logistics Dual Monitoring Section */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <FacilityMonitoringTable facilities={facilities} onSelectFacility={handleSelectFacility} />
         <ShipmentMonitoringTable shipments={shipments} onSelectShipment={handleSelectShipment} />
       </div>
 
-      {/* 6. Alert History */}
       <AlertHistoryFeed history={history} />
 
-      {/* Slide-Over Alert Detail Drawer */}
       <AlertDetailDrawer
         alert={selectedAlert}
         isOpen={isDrawerOpen}
