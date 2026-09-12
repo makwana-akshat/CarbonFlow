@@ -8,10 +8,7 @@ import {
   ChevronRight, 
   ChevronDown,
   Factory, 
-  FileText, 
-  CheckCircle2, 
-  Activity, 
-  Building2
+  FileText
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -20,7 +17,6 @@ import type { UserRole, DashboardState } from '../../types/dashboard';
 import { useAuth } from '@clerk/clerk-react';
 import { 
   getDashboardKPIs,
-  getMarketPrices,
   getSupplyDemand,
   getDashboardAlerts,
   getDashboardInsight
@@ -179,7 +175,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     return (
       <ErrorState 
         title="Unable to load dashboard" 
-        message="There was a problem loading your performance metrics."
+        description="There was a problem loading your performance metrics."
         onRetry={onRetry}
       />
     );
@@ -384,7 +380,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
             {/* 2x2 Stat Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {performanceMetrics.map((metric) => (
+              {performanceMetrics.map((metric: any) => (
                 <div
                   key={metric.id}
                   className="p-4 rounded-[var(--radius-chip)] bg-[var(--surface-muted)]/50 border border-[var(--border-subtle)] space-y-1.5 transition-all hover:bg-[var(--surface-muted)]"
@@ -643,7 +639,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
             {/* 3 Simple Rows: Label left, Count right */}
             <div className="space-y-2.5 pt-1">
-              {summaryBreakdown.map((row, idx) => (
+              {summaryBreakdown.map((row: any, idx: number) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between py-1 text-[13px] transition-colors"

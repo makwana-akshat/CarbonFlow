@@ -5,6 +5,8 @@ import { Layers, Network, Activity, Building } from 'lucide-react';
 export const ImpactSummaryBanner: React.FC = () => {
   const { summaryStats } = useCarbonImpact();
 
+  if (!summaryStats) return null;
+
   return (
     <div className="rounded-[var(--radius-card)] bg-[var(--ink)] text-white p-6 sm:p-8 shadow-[var(--shadow-card)] space-y-6">
       {/* Top Headline Statement */}

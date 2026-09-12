@@ -39,7 +39,7 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { getToken } = useAuth();
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {

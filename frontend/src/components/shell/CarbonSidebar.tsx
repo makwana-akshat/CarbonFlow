@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, 
   LayoutDashboard, 
@@ -14,58 +15,77 @@ import {
   Bell, 
   ShieldCheck, 
   Settings, 
-  LogOut, 
+  LogOut,
   ChevronDown, 
-  ChevronRight, 
   ChevronLeft, 
   Plus, 
-  Check, 
   X,
   Map
 } from 'lucide-react';
-import type { UserRole, TabId } from '../../types/dashboard';
+import { useClerk } from '@clerk/clerk-react';
+import type { UserRole } from '../../types/dashboard';
+import { useAppStore } from '../../store/useAppStore';
 
 export interface CarbonSidebarProps {
-  activeTab: TabId;
-  onSelectTab: (tab: TabId) => void;
-  userRole: UserRole;
-  onChangeRole: (role: UserRole) => void;
-  isMobileOpen?: boolean;
-  onCloseMobile?: () => void;
   className?: string;
+  onCloseMobile?: () => void;
+}
+
+interface NavItemConfig {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string | number;
 }
 
 export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
-  activeTab,
-  onSelectTab,
-  userRole,
-  onChangeRole,
-  isMobileOpen = false,
-  onCloseMobile,
   className = '',
+  onCloseMobile,
 }) => {
-  // Sidebar collapsed state (icon-only: ~72px vs expanded: ~250px)
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
+
+  const {
+    userRole,
+    setUserRole,
+    isSidebarCollapsed,
+    toggleSidebar,
+    setSidebarCollapsed,
+    isMobileSidebarOpen,
+    setMobileSidebarOpen,
+    showToast,
+  } = useAppStore();
+
+  const handleLogout = async () => {
+    try {
+      if (signOut) {
+        await signOut(() => navigate('/'));
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      navigate('/');
+    }
+  };
+
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Expandable section groups state
   const [isImpactOpen, setIsImpactOpen] = useState(true);
 
   // Auto-collapse on tablet screens (<1024px)
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024 && window.innerWidth >= 768) {
-        setIsCollapsed(true);
-      } else if (window.innerWidth >= 1024) {
-        // preserve user choice or expand
+        setSidebarCollapsed(true);
       }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [setSidebarCollapsed]);
 
   // Keyboard shortcut listener for ⌘K / Ctrl+K
   useEffect(() => {
@@ -85,82 +105,108 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
       name: 'Tata Steel Cleantech',
       plan: 'Enterprise Offtake Pro',
       avatar: 'TS',
-      color: 'bg-[var(--ink)] text-white'
+      color: 'bg-[var(--ink)] text-white',
     },
     supplier: {
       name: 'AeroCapture Synthetics',
       plan: 'Capture Node Verified',
       avatar: 'AC',
-      color: 'bg-[var(--accent-primary)] text-white'
+      color: 'bg-[var(--accent-primary)] text-white',
     },
     admin: {
       name: 'Gujarat Industrial Hub',
       plan: 'SCADA Regional Clearing',
       avatar: 'GI',
-      color: 'bg-[var(--ink)] text-white'
-    }
+      color: 'bg-[var(--ink)] text-white',
+    },
   }[userRole];
 
-  // Role-Aware Main Navigation Items
-  const mainNavItems = userRole === 'buyer' ? [
-    { id: 'overview' as TabId, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'marketplace' as TabId, label: 'Marketplace', icon: Store, badge: 'Live' },
-    { id: 'maps' as TabId, label: 'Maps', icon: Map },
-    { id: 'requirements' as TabId, label: 'My Requirements', icon: FileText },
-    { id: 'recommendations' as TabId, label: 'AI Recommendations', icon: Sparkles, badge: '98%' },
-    { id: 'orders' as TabId, label: 'Procurement Plans', icon: FolderKanban },
-    { id: 'orders' as TabId, label: 'Orders', icon: Inbox, badge: 3 },
-    { id: 'logistics' as TabId, label: 'Logistics', icon: Truck },
+  // Role-Aware Main Navigation Items with strictly unique paths
+  const mainNavItems: NavItemConfig[] = userRole === 'buyer' ? [
+    { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/app/marketplace', label: 'Marketplace', icon: Store, badge: 'Live' },
+    { path: '/app/maps', label: 'Maps', icon: Map },
+    { path: '/app/requirements', label: 'My Requirements', icon: FileText },
+    { path: '/app/recommendations', label: 'AI Recommendations', icon: Sparkles, badge: '98%' },
+    { path: '/app/procurement-plans', label: 'Procurement Plans', icon: FolderKanban },
+    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: 3 },
+    { path: '/app/logistics', label: 'Logistics', icon: Truck },
   ] : [
-    { id: 'overview' as TabId, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'marketplace' as TabId, label: 'My CO₂ Supply', icon: Factory },
-    { id: 'marketplace' as TabId, label: 'Marketplace', icon: Store, badge: 'Live' },
-    { id: 'maps' as TabId, label: 'Maps', icon: Map },
-    { id: 'recommendations' as TabId, label: 'Buyer Requests', icon: Users, badge: 6 },
-    { id: 'recommendations' as TabId, label: 'AI Recommendations', icon: Sparkles, badge: '94%' },
-    { id: 'orders' as TabId, label: 'Orders', icon: Inbox, badge: 4 },
-    { id: 'logistics' as TabId, label: 'Logistics', icon: Truck },
+    { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/app/my-supply', label: 'My CO₂ Supply', icon: Factory },
+    { path: '/app/marketplace', label: 'Marketplace', icon: Store, badge: 'Live' },
+    { path: '/app/maps', label: 'Maps', icon: Map },
+    { path: '/app/buyer-requests', label: 'Buyer Requests', icon: Users, badge: 6 },
+    { path: '/app/recommendations', label: 'AI Recommendations', icon: Sparkles, badge: '94%' },
+    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: 4 },
+    { path: '/app/logistics', label: 'Logistics', icon: Truck },
   ];
 
-  const handleNavClick = (tabId: TabId) => {
-    onSelectTab(tabId);
+  // Impact & Reporting items with unique paths
+  const impactNavItems: NavItemConfig[] = [
+    { path: '/app/carbon-impact', label: 'Carbon Impact', icon: Leaf },
+    { path: '/app/alerts', label: 'Alerts & SCADA', icon: Bell, badge: '2' },
+    { path: '/app/audit-contracts', label: 'Audit Contracts', icon: ShieldCheck },
+  ];
+
+  // Single source of truth active state derived strictly from useLocation()
+  const isActive = (path: string) => {
+    if (path === '/app/dashboard') {
+      return (
+        location.pathname === '/app' ||
+        location.pathname === '/app/' ||
+        location.pathname === '/app/dashboard' ||
+        location.pathname === '/app/overview'
+      );
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const handleNavClick = (path: string) => {
+    navigate(path);
     if (onCloseMobile) onCloseMobile();
+    setMobileSidebarOpen(false);
   };
 
   const sidebarContent = (
-    <div className={`h-full flex flex-col justify-between bg-[var(--surface-card)] border-r border-[var(--border-subtle)] transition-all duration-300 relative select-none ${
-      isCollapsed ? 'w-[72px] px-2 py-3' : 'w-[250px] sm:w-[260px] p-3'
-    }`}>
-      
+    <div
+      className={`h-full flex flex-col justify-between bg-[var(--surface-card)] border-r border-[var(--border-subtle)] transition-all duration-300 relative select-none ${
+        isSidebarCollapsed ? 'w-[72px] px-2 py-3' : 'w-[250px] sm:w-[260px] p-3'
+      }`}
+    >
       {/* Edge Collapse Toggle Button (desktop only) */}
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        type="button"
+        onClick={toggleSidebar}
         className="hidden lg:flex absolute -right-3 top-7 w-6 h-6 rounded-full bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-xs items-center justify-center text-[var(--text-secondary)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-all z-30 focus-visible:outline-none"
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} />
+        <ChevronLeft
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+            isSidebarCollapsed ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
-      {/* Top Section: Org Switcher + Search + Nav */}
-      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3">
-        
-        {/* ======================================================================= */}
-        {/* 1. TOP: ORG SWITCHER ("Mob Shop ⌄" pattern) =========================== */}
-        {/* ======================================================================= */}
+      {/* Top Section: Org Switcher + Search + Nav (scrolls internally ONLY if overflowing) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3 min-h-0">
+        {/* 1. TOP: ORG SWITCHER */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
             className={`w-full flex items-center justify-between p-2 rounded-[var(--radius-chip)] hover:bg-[var(--surface-muted)] transition-colors text-left group ${
-              isCollapsed ? 'justify-center p-1.5' : ''
+              isSidebarCollapsed ? 'justify-center p-1.5' : ''
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              {/* Org Logo Icon */}
-              <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center font-semibold text-[13px] shrink-0 shadow-xs ${orgDetails.color}`}>
+              <div
+                className={`w-8 h-8 rounded-[8px] flex items-center justify-center font-semibold text-[13px] shrink-0 shadow-xs ${orgDetails.color}`}
+              >
                 {orgDetails.avatar}
               </div>
 
-              {!isCollapsed && (
+              {!isSidebarCollapsed && (
                 <div className="flex flex-col min-w-0">
                   <span className="text-[13px] font-semibold text-[var(--ink)] truncate leading-tight">
                     {orgDetails.name}
@@ -172,81 +218,87 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
               )}
             </div>
 
-            {!isCollapsed && (
-              <ChevronDown className={`w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--ink)] transition-transform duration-150 shrink-0 ${
-                isOrgDropdownOpen ? 'rotate-180' : ''
-              }`} />
+            {!isSidebarCollapsed && (
+              <ChevronDown
+                className={`w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--ink)] transition-transform duration-150 shrink-0 ${
+                  isOrgDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
             )}
           </button>
 
           {/* Org & Role Switcher Dropdown */}
           {isOrgDropdownOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setIsOrgDropdownOpen(false)} />
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsOrgDropdownOpen(false)}
+              />
               <div className="absolute top-12 left-0 w-64 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-card)] shadow-xl z-50 p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150">
-                
                 <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                  Switch Organization
+                  Switch Persona / Org
                 </div>
 
                 {[
-                  { role: 'buyer' as UserRole, org: 'Tata Steel Cleantech', subtitle: 'Industrial Offtake Buyer' },
-                  { role: 'supplier' as UserRole, org: 'AeroCapture Synthetics', subtitle: 'DAC & Biogenic Plant' },
-                  { role: 'admin' as UserRole, org: 'Gujarat Industrial Hub', subtitle: 'Regional Clearing Authority' }
+                  {
+                    role: 'buyer' as UserRole,
+                    org: 'Tata Steel Cleantech',
+                    subtitle: 'Industrial Offtake Buyer',
+                  },
+                  {
+                    role: 'supplier' as UserRole,
+                    org: 'AeroCapture Synthetics',
+                    subtitle: 'DAC & Biogenic Plant',
+                  },
+                  {
+                    role: 'admin' as UserRole,
+                    org: 'Gujarat Industrial Hub',
+                    subtitle: 'Regional Clearing Authority',
+                  },
                 ].map((item) => (
                   <button
                     key={item.role}
+                    type="button"
                     onClick={() => {
-                      onChangeRole(item.role);
+                      setUserRole(item.role);
                       setIsOrgDropdownOpen(false);
+                      showToast(`Switched persona to ${item.org} (${item.role} mode)`);
                     }}
-                    className={`w-full flex items-center justify-between p-2 rounded-[var(--radius-chip)] text-left text-[12px] transition-colors ${
+                    className={`w-full flex items-start gap-2.5 p-2 rounded-[var(--radius-chip)] text-left transition-colors ${
                       userRole === item.role
                         ? 'bg-[var(--surface-muted)] text-[var(--ink)] font-semibold'
-                        : 'text-[var(--text-primary)] hover:bg-[var(--surface-muted)]/60'
+                        : 'hover:bg-[var(--surface-muted)]/50 text-[var(--text-secondary-accessible)]'
                     }`}
                   >
-                    <div>
-                      <div className="font-semibold leading-tight">{item.org}</div>
-                      <div className="text-[11px] text-[var(--text-secondary-accessible)]">{item.subtitle}</div>
+                    <div className="w-6 h-6 rounded bg-[var(--ink)] text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                      {item.role.substring(0, 2).toUpperCase()}
                     </div>
-                    {userRole === item.role && <Check className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[12px] leading-snug">{item.org}</span>
+                      <span className="text-[10px] text-[var(--text-secondary)]">{item.subtitle}</span>
+                    </div>
                   </button>
                 ))}
-
-                <div className="border-t border-[var(--border-subtle)] pt-1.5 mt-1 px-2">
-                  <button
-                    onClick={() => {
-                      alert('Create new organization workspace modal');
-                      setIsOrgDropdownOpen(false);
-                    }}
-                    className="text-[12px] font-medium text-[var(--text-secondary-accessible)] hover:text-[var(--ink)] flex items-center gap-1.5 py-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Create Organization</span>
-                  </button>
-                </div>
               </div>
             </>
           )}
         </div>
 
-        {/* ======================================================================= */}
-        {/* 2. COMPACT SEARCH INPUT WITH ⌘K SHORTCUT ============================== */}
-        {/* ======================================================================= */}
-        <div className="relative">
+        {/* 2. SEARCH / QUICK JUMP (⌘K) */}
+        <div>
           <button
+            type="button"
             onClick={() => setIsSearchModalOpen(true)}
             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-pill)] bg-[var(--surface-muted)]/70 hover:bg-[var(--surface-muted)] border border-[var(--border-subtle)] text-[12px] text-[var(--text-secondary-accessible)] transition-colors select-none ${
-              isCollapsed ? 'justify-center px-2' : ''
+              isSidebarCollapsed ? 'justify-center px-2' : ''
             }`}
             title="Search projects, facilities, contracts (⌘K)"
           >
             <div className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" />
-              {!isCollapsed && <span className="truncate">Search</span>}
+              {!isSidebarCollapsed && <span className="truncate">Search</span>}
             </div>
-            {!isCollapsed && (
+            {!isSidebarCollapsed && (
               <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-mono font-semibold text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded shadow-2xs">
                 ⌘K
               </kbd>
@@ -254,33 +306,37 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
           </button>
         </div>
 
-        {/* ======================================================================= */}
-        {/* 3. MAIN NAVIGATION (Role-Aware, Filled --paper active pill) ============= */}
-        {/* ======================================================================= */}
+        {/* 3. MAIN NAVIGATION */}
         <div className="flex flex-col gap-0.5 pt-1">
-          {mainNavItems.map((item, idx) => {
-            const isActive = activeTab === item.id;
+          {mainNavItems.map((item) => {
+            const active = isActive(item.path);
+            const Icon = item.icon;
             return (
               <button
-                key={idx}
-                onClick={() => handleNavClick(item.id)}
+                key={item.path}
+                type="button"
+                onClick={() => handleNavClick(item.path)}
                 className={`group flex items-center justify-between px-2.5 py-2 rounded-[var(--radius-pill)] text-[13px] transition-all duration-150 text-left ${
-                  isActive
+                  active
                     ? 'bg-[var(--surface-muted)] text-[var(--ink)] font-semibold shadow-2xs'
                     : 'text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)]/50 hover:text-[var(--ink)] font-medium'
-                } ${isCollapsed ? 'justify-center px-2' : ''}`}
-                title={isCollapsed ? item.label : undefined}
+                } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
+                title={isSidebarCollapsed ? item.label : undefined}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <item.icon className={`w-4 h-4 shrink-0 transition-colors ${
-                    isActive ? 'text-[var(--ink)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--ink)]'
-                  }`} />
-                  {!isCollapsed && (
+                  <Icon
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      active
+                        ? 'text-[var(--ink)]'
+                        : 'text-[var(--text-secondary)] group-hover:text-[var(--ink)]'
+                    }`}
+                  />
+                  {!isSidebarCollapsed && (
                     <span className="truncate">{item.label}</span>
                   )}
                 </div>
 
-                {!isCollapsed && item.badge && (
+                {!isSidebarCollapsed && item.badge && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--surface-card)] text-[var(--ink)] border border-[var(--border-subtle)] shadow-2xs">
                     {item.badge}
                   </span>
@@ -290,26 +346,27 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
           })}
         </div>
 
-        {/* ======================================================================= */}
-        {/* 4. EXPANDABLE SECTION GROUPS (with chevron + "+" hover affordance) ====== */}
-        {/* ======================================================================= */}
-        {!isCollapsed && (
+        {/* 4. EXPANDABLE SECTION GROUPS: Impact & Reporting */}
+        {!isSidebarCollapsed && (
           <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-            
-            {/* Group A: Impact & Reporting */}
             <div className="space-y-0.5">
               <div className="group flex items-center justify-between px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 <button
+                  type="button"
                   onClick={() => setIsImpactOpen(!isImpactOpen)}
                   className="flex items-center gap-1.5 hover:text-[var(--ink)] transition-colors text-left"
                 >
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${isImpactOpen ? '' : '-rotate-90'}`} />
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                      isImpactOpen ? '' : '-rotate-90'
+                    }`}
+                  />
                   <span>Impact & Reporting</span>
                 </button>
 
-                {/* "+" Affordance on hover to jump to sub-action */}
                 <button
-                  onClick={() => alert('New Report Generator queued')}
+                  type="button"
+                  onClick={() => showToast('New Carbon Report generator queued')}
                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--ink)] transition-opacity"
                   title="Generate Carbon Report"
                 >
@@ -319,30 +376,33 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
 
               {isImpactOpen && (
                 <div className="flex flex-col gap-0.5 pl-3">
-                  {[
-                    { id: 'carbon-impact' as TabId, label: 'Carbon Impact', icon: Leaf },
-                    { id: 'alerts' as TabId, label: 'Alerts & SCADA', icon: Bell, badge: '2' },
-                    { id: 'audit-contracts' as TabId, label: 'Audit Contracts', icon: ShieldCheck }
-                  ].map((sub) => {
-                    const isActive = activeTab === sub.id;
+                  {impactNavItems.map((sub) => {
+                    const active = isActive(sub.path);
+                    const SubIcon = sub.icon;
                     return (
                       <button
-                        key={sub.label}
-                        onClick={() => handleNavClick(sub.id)}
+                        key={sub.path}
+                        type="button"
+                        onClick={() => handleNavClick(sub.path)}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors text-left ${
-                          isActive
+                          active
                             ? 'bg-[var(--surface-muted)] text-[var(--ink)] font-semibold shadow-2xs'
                             : 'text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)]/50 hover:text-[var(--ink)]'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <sub.icon className={`w-3.5 h-3.5 transition-colors ${
-                            isActive ? 'text-[var(--accent-primary)]' : 'text-[var(--text-secondary)]'
-                          }`} />
-                          <span>{sub.label}</span>
+                          <SubIcon
+                            className={`w-3.5 h-3.5 transition-colors ${
+                              active
+                                ? 'text-[var(--accent-primary)]'
+                                : 'text-[var(--text-secondary)]'
+                            }`}
+                          />
+                          <span className="truncate">{sub.label}</span>
                         </div>
+
                         {sub.badge && (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-[var(--status-danger)]/10 text-[var(--status-danger)]">
                             {sub.badge}
                           </span>
                         )}
@@ -352,78 +412,48 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                 </div>
               )}
             </div>
-
           </div>
         )}
-
       </div>
 
-      {/* ========================================================================= */}
-      {/* 5. BOTTOM PINNED SECTION: Profile + Settings + Log out =================== */}
-      {/* ========================================================================= */}
-      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-1 mt-2">
-        
-        {/* User profile row ("Jenny Wilson / email" pattern) */}
-        <button
-          onClick={() => alert('Opening Account Settings for Jenny Wilson')}
-          className={`w-full flex items-center justify-between p-2 rounded-[var(--radius-chip)] hover:bg-[var(--surface-muted)] transition-colors text-left ${
-            isCollapsed ? 'justify-center p-1.5' : ''
-          }`}
-          title="Jenny Wilson • Operations Lead"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-[var(--surface-muted)] border border-[var(--border-subtle)] flex items-center justify-center font-semibold text-[12px] text-[var(--ink)] shrink-0">
-              JW
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="text-[13px] font-semibold text-[var(--ink)] truncate leading-tight">
-                  Jenny Wilson
-                </span>
-                <span className="text-[11px] text-[var(--text-secondary)] truncate leading-tight mt-0.5">
-                  j.wilson@carbonflow.io
-                </span>
-              </div>
-            )}
-          </div>
-          {!isCollapsed && (
-            <ChevronRight className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" />
-          )}
-        </button>
-
-        {/* Settings & Log out links */}
-        <div className="flex flex-col gap-0.5 pt-0.5">
+      {/* 5. BOTTOM PINNED SECTION: Settings & Logout */}
+      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-1 mt-2 shrink-0">
+        <div className="flex flex-col gap-0.5">
           <button
-            onClick={() => onSelectTab('ui-gallery')}
-            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] transition-colors text-left ${
-              isCollapsed ? 'justify-center px-2' : ''
-            }`}
+            type="button"
+            onClick={() => handleNavClick('/app/settings')}
+            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors text-left ${
+              isActive('/app/settings')
+                ? 'bg-[var(--surface-muted)] text-[var(--ink)] font-semibold'
+                : 'text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]'
+            } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
             title="Settings"
           >
             <Settings className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
-            {!isCollapsed && <span>Settings</span>}
+            {!isSidebarCollapsed && <span>Settings</span>}
           </button>
 
           <button
-            onClick={() => alert('Logged out of CarbonFlow session')}
-            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)] hover:text-[var(--status-danger)] transition-colors text-left ${
-              isCollapsed ? 'justify-center px-2' : ''
+            type="button"
+            onClick={handleLogout}
+            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors text-left text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)] hover:text-[var(--status-danger)] group ${
+              isSidebarCollapsed ? 'justify-center px-2' : ''
             }`}
             title="Log out"
           >
-            <LogOut className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
-            {!isCollapsed && <span>Log out</span>}
+            <LogOut className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--status-danger)] shrink-0 transition-colors" />
+            {!isSidebarCollapsed && <span>Log out</span>}
           </button>
         </div>
-
       </div>
 
-      {/* ========================================================================= */}
-      {/* 6. SEARCH MODAL OVERLAY (Triggered via ⌘K or Search Input) ============== */}
-      {/* ========================================================================= */}
+      {/* 6. SEARCH MODAL OVERLAY (⌘K) */}
       {isSearchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] bg-black/40 backdrop-blur-xs px-4 animate-in fade-in duration-150">
-          <div className="fixed inset-0" onClick={() => setIsSearchModalOpen(false)} />
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsSearchModalOpen(false)}
+          />
           <div className="relative w-full max-w-lg bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-card)] shadow-2xl overflow-hidden z-10">
             <div className="flex items-center px-4 border-b border-[var(--border-subtle)]">
               <Search className="w-4 h-4 text-[var(--text-secondary)] mr-3 shrink-0" />
@@ -435,6 +465,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                 className="w-full py-3.5 bg-transparent text-[14px] text-[var(--text-primary)] placeholder-[var(--text-secondary)] outline-none"
               />
               <button
+                type="button"
                 onClick={() => setIsSearchModalOpen(false)}
                 className="p-1 rounded text-[var(--text-secondary)] hover:text-[var(--ink)]"
               >
@@ -446,13 +477,26 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                 Quick Navigation
               </div>
               {[
-                { title: 'Marketplace — Spot Listings', action: () => handleNavClick('marketplace') },
-                { title: 'Recommended Matches (98.4%)', action: () => handleNavClick('recommendations') },
-                { title: 'Active Rail Orders (ORD-8921)', action: () => handleNavClick('orders') },
-                { title: 'Switch to Supplier Persona', action: () => onChangeRole('supplier') },
+                {
+                  title: 'My CO₂ Supply (Supplier Streams)',
+                  action: () => handleNavClick('/app/my-supply'),
+                },
+                {
+                  title: 'Marketplace — Spot Listings',
+                  action: () => handleNavClick('/app/marketplace'),
+                },
+                {
+                  title: 'Logistics Route Planning',
+                  action: () => handleNavClick('/app/logistics'),
+                },
+                {
+                  title: 'Alerts & SCADA Monitoring',
+                  action: () => handleNavClick('/app/alerts'),
+                },
               ].map((item, idx) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => {
                     item.action();
                     setIsSearchModalOpen(false);
@@ -467,32 +511,34 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 
   return (
     <>
-      {/* Desktop Sticky Sidebar */}
-      <aside className={`hidden md:block shrink-0 h-screen sticky top-0 z-30 ${className}`}>
+      {/* Desktop Fixed Height Sidebar */}
+      <aside className={`hidden md:flex shrink-0 h-full select-none ${className}`}>
         {sidebarContent}
       </aside>
 
       {/* Mobile Off-Canvas Drawer (<768px) */}
-      {isMobileOpen && (
+      {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
-            onClick={onCloseMobile}
+            onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="relative w-[270px] h-full bg-[var(--surface-card)] shadow-2xl z-10 flex flex-col">
             <div className="flex items-center justify-between p-3 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-[14px] text-[var(--ink)]">CARBONFLOW</span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-[var(--surface-muted)] text-[var(--text-secondary-accessible)]">Menu</span>
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-[var(--surface-muted)] text-[var(--text-secondary-accessible)]">
+                  Menu
+                </span>
               </div>
               <button
-                onClick={onCloseMobile}
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
                 className="p-1 rounded-full text-[var(--text-secondary)] hover:text-[var(--ink)]"
               >
                 <X className="w-4 h-4" />

@@ -2,7 +2,7 @@ export type UserRole = 'buyer' | 'supplier' | 'admin';
 
 export type DashboardState = 'success' | 'loading' | 'empty' | 'error';
 
-export type TabId = 'overview' | 'marketplace' | 'recommendations' | 'orders' | 'logistics' | 'maps' | 'ui-gallery' | 'requirements' | 'carbon-impact' | 'alerts' | 'audit-contracts';
+export type TabId = 'overview' | 'marketplace' | 'recommendations' | 'orders' | 'logistics' | 'maps' | 'requirements' | 'carbon-impact' | 'alerts' | 'audit-contracts' | 'settings';
 
 export interface TabItem {
   id: TabId;
@@ -26,6 +26,14 @@ export interface RouteStep {
   label: string;
 }
 
+export interface MatchScoreBreakdown {
+  purity: number;
+  price: number;
+  distance: number;
+  reliability: number;
+  segmentFit: number;
+}
+
 export interface RecommendationItem {
   id: string;
   companyName: string;
@@ -42,8 +50,13 @@ export interface RecommendationItem {
   purity: string;
   deliveryTimeline: string;
   certification: string;
-  co2Source: 'DAC' | 'Biogenic' | 'Point-Source Capture';
-  transportMode: 'Pipeline' | 'ISO Rail Tanker' | 'Cryogenic Truck' | 'Barge';
+  co2Source: 'DAC' | 'Biogenic' | 'Point-Source Capture' | string;
+  transportMode: 'Pipeline' | 'ISO Rail Tanker' | 'Cryogenic Truck' | 'Barge' | string;
+  distance?: string;
+  reliability?: string;
+  segment?: string;
+  reasons?: string[];
+  breakdown?: MatchScoreBreakdown;
 }
 
 export interface MarketPricePoint {

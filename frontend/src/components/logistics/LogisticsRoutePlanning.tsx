@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Shipment, TransportModeId } from './types';
-import { SAMPLE_SHIPMENTS, getEligibleModes } from './mockShipments';
+import { SAMPLE_SHIPMENTS, getEligibleModes, getRouteOptionsForMode } from './mockShipments';
 import { LogisticsMap } from './LogisticsMap';
 import { useAuth } from '@clerk/clerk-react';
 import { calculateRoute } from '../../services/logisticsApi';
@@ -94,9 +94,10 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
           currentShipment.volume,
           currentShipment.purity
         );
-        // filter by modeId on client
-        const filtered = opts.filter(o => o.modeId === selectedModeId);
-        setAvailableRoutes(filtered.length > 0 ? filtered : opts);
+        if (Array.isArray(opts)) {
+          const filtered = opts.filter((o) => o && o.modeId === selectedModeId);
+          setAvailableRoutes(filtered.length > 0 ? filtered : opts);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -104,16 +105,22 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
     fetchRoutes();
   }, [currentShipment, selectedModeId, getToken]);
 
+  const defaultRoutes = useMemo(() => {
+    return getRouteOptionsForMode(currentShipment, selectedModeId);
+  }, [currentShipment, selectedModeId]);
+
+  const effectiveRoutes = availableRoutes.length > 0 ? availableRoutes : defaultRoutes;
+
   // Selected route state (defaults to recommended route)
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(availableRoutes[0]?.id || '');
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(effectiveRoutes[0]?.id || '');
 
   // Sync selected route when available routes change
   useEffect(() => {
-    const recommended = availableRoutes.find((r) => r.isRecommended);
-    setSelectedRouteId(recommended ? recommended.id : availableRoutes[0]?.id || '');
-  }, [availableRoutes]);
+    const recommended = effectiveRoutes.find((r) => r.isRecommended);
+    setSelectedRouteId(recommended ? recommended.id : effectiveRoutes[0]?.id || '');
+  }, [effectiveRoutes]);
 
-  const activeRoute = availableRoutes.find((r) => r.id === selectedRouteId) || availableRoutes[0];
+  const activeRoute = effectiveRoutes.find((r) => r.id === selectedRouteId) || effectiveRoutes[0] || defaultRoutes[0];
 
   // Dynamic corridor warnings
   const activeWarnings: WarningItem[] = useMemo(() => {
@@ -211,7 +218,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
             <LogisticsMap
               shipment={currentShipment}
               activeRoute={activeRoute}
-              allRoutes={availableRoutes}
+              allRoutes={effectiveRoutes}
               onSelectRoute={setSelectedRouteId}
               className="w-full h-full"
             />
@@ -262,7 +269,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                     </span>
                     <span className="text-gray-300">•</span>
                     <span className="text-[12px] font-semibold text-[#F4611E] truncate">
-                      {activeRoute.name}
+                      {activeRoute?.name || 'Standard Route'}
                     </span>
                   </div>
                 </div>
@@ -400,7 +407,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                   subtitle="Routing Matrix"
                   badge={
                     <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full border border-gray-200">
-                      {availableRoutes.length} Corridors
+                      {effectiveRoutes.length} Corridors
                     </span>
                   }
                   collapsedIcon={<Milestone className="w-5 h-5 text-[#F4611E]" />}
@@ -410,7 +417,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                   className="w-full pointer-events-auto max-h-[calc(100vh-230px)] overflow-y-auto no-scrollbar"
                 >
                   <RouteOptionsPanel
-                    routes={availableRoutes}
+                    routes={effectiveRoutes}
                     selectedRouteId={selectedRouteId}
                     onSelectRoute={setSelectedRouteId}
                     hideHeader={true}
@@ -482,7 +489,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
               <LogisticsMap
                 shipment={currentShipment}
                 activeRoute={activeRoute}
-                allRoutes={availableRoutes}
+                allRoutes={effectiveRoutes}
                 onSelectRoute={setSelectedRouteId}
                 className="w-full h-full"
               />
@@ -505,7 +512,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
             {/* Route Options */}
             <div className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm">
               <RouteOptionsPanel
-                routes={availableRoutes}
+                routes={effectiveRoutes}
                 selectedRouteId={selectedRouteId}
                 onSelectRoute={setSelectedRouteId}
               />

@@ -15,7 +15,7 @@ export const NAVIGATION_TABS: TabItem[] = [
   { id: 'recommendations', label: 'Recommendations' },
   { id: 'orders', label: 'Orders', hasDropdown: true },
   { id: 'logistics', label: 'Logistics' },
-  { id: 'ui-gallery', label: 'UI Kit Gallery' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export const SEARCH_CATEGORY_CHIPS = [
@@ -37,85 +37,85 @@ export const KPI_DATA: Record<UserRole, KpiMetric[]> = {
       period: 'vs last month'
     },
     {
-      id: 'rec-suppliers',
-      label: 'Recommended Suppliers',
-      value: '14',
-      trend: { value: '+3 new', isPositive: true },
-      period: 'verified matches'
+      id: 'contract-coverage',
+      label: 'Contract Coverage',
+      value: '88.4%',
+      trend: { value: '+4.1%', isPositive: true },
+      period: 'secured until Q4'
     },
     {
-      id: 'active-orders',
-      label: 'Active Orders',
-      value: '6',
-      trend: { value: '2 in transit', isPositive: true },
-      period: 'ISO rail tankers'
+      id: 'avg-purity',
+      label: 'Weighted Purity',
+      value: '99.94%',
+      trend: { value: 'Spec OK', isPositive: true },
+      period: 'continuous assay'
     },
     {
-      id: 'avg-cost',
-      label: 'Avg Procurement Cost',
-      value: '$41.80/t',
-      trend: { value: '-4.5%', isPositive: true },
-      period: 'below index avg'
+      id: 'net-negative-cost',
+      label: 'Weighted Price',
+      value: '$38.40/t',
+      trend: { value: '-2.4%', isPositive: true },
+      period: 'vs spot benchmark'
     }
   ],
   supplier: [
     {
-      id: 'available-co2',
-      label: 'Available CO₂',
-      value: '68,200 t',
-      trend: { value: '+12.4%', isPositive: true },
-      period: 'capture rate'
+      id: 'capture-yield',
+      label: 'Active Capture Rate',
+      value: '18,200 t/mo',
+      trend: { value: '+12.5%', isPositive: true },
+      period: 'nameplate 92%'
     },
     {
-      id: 'active-listings',
-      label: 'Active Listings',
-      value: '9',
-      trend: { value: '+2 this week', isPositive: true },
-      period: 'spot & contracts'
+      id: 'offtake-committed',
+      label: 'Committed Offtake',
+      value: '94.2%',
+      trend: { value: '+6.0%', isPositive: true },
+      period: 'forward contracts'
     },
     {
-      id: 'buyer-requests',
-      label: 'Buyer Requests',
-      value: '28',
-      trend: { value: '+18.2%', isPositive: true },
-      period: 'pending offtakes'
+      id: 'liquefaction-uptime',
+      label: 'Cryo-Loop Uptime',
+      value: '99.7%',
+      trend: { value: 'Optimal', isPositive: true },
+      period: '30-day telemetry'
     },
     {
-      id: 'co2-sold',
-      label: 'CO₂ Sold YTD',
-      value: '142,800 t',
-      trend: { value: '+21.6%', isPositive: true },
-      period: 'YoY contracted'
+      id: 'realized-clearing-price',
+      label: 'Realized Net Price',
+      value: '$41.80/t',
+      trend: { value: '+3.1%', isPositive: true },
+      period: 'blended FOB'
     }
   ],
   admin: [
     {
-      id: 'volume-traded',
-      label: 'Total Volume Traded',
-      value: '412,900 t',
-      trend: { value: '+16.8%', isPositive: true },
-      period: 'MoM marketplace vol'
+      id: 'platform-cleared-volume',
+      label: 'Total Volume Cleared',
+      value: '142,800 t',
+      trend: { value: '+18.4%', isPositive: true },
+      period: 'trailing 30 days'
     },
     {
-      id: 'participants',
-      label: 'Active Participants',
-      value: '184',
-      trend: { value: '+14 verified', isPositive: true },
-      period: 'suppliers & buyers'
+      id: 'active-intermodal-routes',
+      label: 'Active Dispatched Routes',
+      value: '34 Units',
+      trend: { value: '4 Modes', isPositive: true },
+      period: 'live GPS SCADA'
     },
     {
-      id: 'pipeline-liquidity',
-      label: 'Pipeline Liquidity',
-      value: '$17.2M',
-      trend: { value: '+9.4%', isPositive: true },
-      period: 'escrow contracted'
+      id: 'cross-border-settlement',
+      label: 'Smart Contract Escrow',
+      value: '$5.48M',
+      trend: { value: '100% Cleared', isPositive: true },
+      period: 'instant release'
     },
     {
-      id: 'compliance-index',
-      label: 'Compliance Index',
-      value: '99.4%',
-      trend: { value: '+0.3%', isPositive: true },
-      period: 'ISO-14064 verified'
+      id: 'compliance-audits',
+      label: 'Verified MRV Filings',
+      value: '100%',
+      trend: { value: 'ISO 14064-2', isPositive: true },
+      period: 'zero non-conformity'
     }
   ]
 };
@@ -139,6 +139,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: '99.98% (Dry basis, <2 ppm H2O)',
       deliveryTimeline: '18h direct rail dispatch',
       certification: 'ISO 14064-2 / RED II Verified',
+      distance: '182 km',
+      reliability: '99.4%',
+      segment: 'DAC',
+      reasons: [
+        'Meets your purity threshold of >99.9% with certified 99.98% cryogenic assay.',
+        'Located 182 km from your facility via dedicated ISO rail direct terminal.',
+        'Unit price of $39.20/t is 11% below regional spot benchmark.',
+        'Segment match: DAC (Direct Air Capture) with ISO 14064-2 verified removal.',
+        '99.4% historical on-time delivery across verified custody transfers.'
+      ],
+      breakdown: {
+        purity: 99,
+        price: 94,
+        distance: 92,
+        reliability: 99,
+        segmentFit: 98
+      },
       routeSteps: [
         { iconType: 'capture', label: 'DAC Array Alpha' },
         { iconType: 'cryo', label: 'Cryo-Compressor (-28°C)' },
@@ -163,6 +180,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: '99.90% (<10 ppm hydrocarbons)',
       deliveryTimeline: 'Continuous 40 bar pipeline',
       certification: 'ISCC PLUS Certified',
+      distance: '314 km',
+      reliability: '98.1%',
+      segment: 'BIOGENIC',
+      reasons: [
+        'Meets required volume capacity with 14,200 t/mo continuous throughput.',
+        'Connected via direct continuous 40 bar regional pipeline trunkline.',
+        'Competitive unit pricing at $36.80/t with index-linked quarterly escrow.',
+        'Segment match: Biogenic fermentation with ISCC PLUS carbon certification.',
+        '98.1% pipeline pressure uptime across continuous SCADA telemetry.'
+      ],
+      breakdown: {
+        purity: 95,
+        price: 98,
+        distance: 88,
+        reliability: 97,
+        segmentFit: 93
+      },
       routeSteps: [
         { iconType: 'capture', label: 'Fermenter Off-Gas' },
         { iconType: 'pipeline', label: 'Regional Trunkline 4' },
@@ -186,6 +220,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: '99.82% (Moisture <5 ppm)',
       deliveryTimeline: '48h scheduled marine barge',
       certification: 'BSI PAS 2060 Verified',
+      distance: '520 km',
+      reliability: '96.5%',
+      segment: 'FOOD-GRADE',
+      reasons: [
+        'Deep-water terminal access supporting large 22,000 t/mo buffer capacity.',
+        '520 km coastal intermodal corridor with 48h scheduled marine barge dispatch.',
+        'Chemical purity exceeds 99.8% with moisture content strictly under 5 ppm.',
+        'Dual-verified compliance under BSI PAS 2060 carbon accountability standards.',
+        '96.5% custody transfer completion rate with real-time bill-of-lading notarization.'
+      ],
+      breakdown: {
+        purity: 92,
+        price: 90,
+        distance: 81,
+        reliability: 95,
+        segmentFit: 91
+      },
       routeSteps: [
         { iconType: 'capture', label: 'Cluster Flue Scrubber' },
         { iconType: 'cryo', label: 'Deep Chilling Plant' },
@@ -211,6 +262,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: 'Min 98.5% acceptable',
       deliveryTimeline: 'Starting next billing cycle',
       certification: 'EU Innovation Fund Grantee',
+      distance: '145 km',
+      reliability: '99.1%',
+      segment: 'BIOGENIC',
+      reasons: [
+        'Guaranteed 3-year bilateral offtake agreement backed by platform escrow.',
+        'Located 145 km along the Rhine inland navigation waterway.',
+        'Above-market purchase bid of $42.50/t securing steady operational margins.',
+        'Segment match: Industrial mineralization with verified sequestration certs.',
+        '99.1% payment settlement reliability record.'
+      ],
+      breakdown: {
+        purity: 98,
+        price: 96,
+        distance: 94,
+        reliability: 99,
+        segmentFit: 97
+      },
       routeSteps: [
         { iconType: 'capture', label: 'Supplier Outflow' },
         { iconType: 'pipeline', label: 'Rhine Barge Loading' },
@@ -234,6 +302,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: '99.99% E290 certified',
       deliveryTimeline: 'Weekly ISO cryo deliveries',
       certification: 'FSSC 22000 Ready',
+      distance: '280 km',
+      reliability: '98.5%',
+      segment: 'FOOD-GRADE',
+      reasons: [
+        'Premium high-margin demand offering $46.00/t for food-grade purity.',
+        'Weekly scheduled deliveries with dedicated cryogenic road tankers.',
+        'FSSC 22000 food and beverage compliance protocol match.',
+        'Segment match: Food Grade E290 with immediate spot liquidity.',
+        '98.5% operational receiving score.'
+      ],
+      breakdown: {
+        purity: 99,
+        price: 98,
+        distance: 87,
+        reliability: 98,
+        segmentFit: 95
+      },
       routeSteps: [
         { iconType: 'cryo', label: 'Cryo-Tanks Station' },
         { iconType: 'truck', label: 'Dedicated Cryo-Fleet' },
@@ -259,6 +344,23 @@ export const RECOMMENDATIONS_DATA: Record<UserRole, RecommendationItem[]> = {
       purity: 'Dual specification manifold',
       deliveryTimeline: 'Continuous 24/7 telemetry',
       certification: 'EU Critical Infrastructure Reg',
+      distance: '95 km',
+      reliability: '99.8%',
+      segment: 'DAC',
+      reasons: [
+        'Primary intermodal hub connecting rail, barge, and continuous pipeline grids.',
+        '45,000 t/mo buffer capacity mitigates corridor supply bottlenecks.',
+        'Lowest average systemic tariff of $38.90/t across regional routes.',
+        'Designated as EU critical infrastructure project with automated MRV.',
+        '99.8% cross-border settlement and dispatch accuracy.'
+      ],
+      breakdown: {
+        purity: 99,
+        price: 95,
+        distance: 98,
+        reliability: 99,
+        segmentFit: 99
+      },
       routeSteps: [
         { iconType: 'pipeline', label: 'Western Trunkline' },
         { iconType: 'terminal', label: 'Buffer Sphere 40k t' },

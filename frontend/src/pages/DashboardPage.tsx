@@ -2,13 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { syncUser, getCurrentUser } from '../services/auth';
 import { CarbonFlowShell } from '../components/shell/CarbonFlowShell';
-import type { TabId } from '../types/dashboard';
-
-export interface DashboardPageProps {
-  initialTab?: TabId;
-}
-
-export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'overview' }) => {
+export const DashboardPage: React.FC = () => {
   const { getToken } = useAuth();
   const { user } = useUser();
   const [appUser, setAppUser] = useState<any>(null);
@@ -46,7 +40,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ initialTab = 'over
 
   return (
     <CarbonFlowShell
-      initialTab={initialTab}
       appUser={
         appUser || {
           email: user?.primaryEmailAddress?.emailAddress || 'operator@carbonflow.internal',

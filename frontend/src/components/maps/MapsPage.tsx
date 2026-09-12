@@ -8,7 +8,6 @@ import type {
   BuyerNode,
   FacilityNode,
   RouteData,
-  RegionData,
   CarbonFlowEdge,
 } from '../../types/maps';
 import { DEFAULT_MAP_FILTERS } from '../../types/maps';

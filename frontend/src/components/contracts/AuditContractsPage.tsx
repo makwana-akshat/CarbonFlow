@@ -4,8 +4,6 @@ import { ComplianceSummaryBar } from './ComplianceSummaryBar';
 import { AuditContractTable } from './AuditContractTable';
 import { ContractDetailDrawer } from './ContractDetailDrawer';
 import { 
-  AUDIT_CONTRACTS_DATA, 
-  COMPLIANCE_SUMMARY, 
   type AuditContractItem, 
   type AuditContractStatus 
 } from '../../data/auditContractsMock';
@@ -51,8 +49,8 @@ export const AuditContractsPage: React.FC = () => {
             supplier: c.supplier_name,
             buyer: c.buyer_name,
             volume: c.volume,
-            value: c.contract_value,
-            date: c.created_date,
+            contractValue: c.contract_value,
+            createdDate: c.created_date,
             status: c.status as AuditContractStatus,
             version: c.version,
             purity: c.purity || '',
@@ -72,7 +70,7 @@ export const AuditContractsPage: React.FC = () => {
               notes: t.notes || '',
               status: t.status
             })),
-            versions: c.version_history.map((v: any) => ({
+            versionHistory: c.version_history.map((v: any) => ({
               version: v.version,
               isCurrent: v.is_current,
               summary: v.summary || '',

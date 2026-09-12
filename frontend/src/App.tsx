@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -45,7 +47,7 @@ function LandingPage() {
 
             <SignedIn>
               <Link
-                to="/dashboard"
+                to="/app/dashboard"
                 className="text-xs font-semibold bg-[var(--ink)] text-white px-4 py-1.5 rounded-[var(--radius-card)] hover:bg-[var(--accent-primary)] transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 Go to Dashboard
@@ -59,92 +61,94 @@ function LandingPage() {
       {/* Hero Section */}
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col justify-center">
         <div className="max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[var(--radius-pill)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[12px] font-medium text-[var(--text-secondary-accessible)]">
-            <span className="w-2 h-2 rounded-full bg-[var(--status-online)] animate-pulse" />
-            B2B Industrial CO₂ Infrastructure & Clearing House
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[var(--radius-pill)] bg-[var(--surface-card)] border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-secondary-accessible)] shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] animate-pulse" />
+            Decarbonization Logistics & Clearing Hub
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--ink)] leading-tight">
-            Geospatial Routing & Clearing for Industrial Carbon Offtake
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-[var(--ink)] leading-[1.1]">
+            Standardized Infrastructure for the Indian Carbon Economy.
           </h1>
 
-          <p className="text-base sm:text-lg text-[var(--text-secondary-accessible)] leading-relaxed max-w-2xl">
-            Connecting emitters, transport carriers, and utilization offtakers with SCADA-verified telemetry,
-            multi-modal route calculation, and instant clearing contracts.
+          <p className="text-base sm:text-lg text-[var(--text-secondary-accessible)] max-w-2xl leading-relaxed">
+            Connect industrial CO₂ emitters with utilization offtakers. Real-time GIS routing, automated SCADA telemetry clearing, ISO-audited bilateral smart contracts, and verified emission mitigation accounts.
           </p>
 
-          <div className="pt-2 flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <SignedOut>
               <Link
                 to="/signup"
-                className="inline-flex items-center gap-2 bg-[var(--accent-primary)] text-white px-6 py-3 rounded-[var(--radius-card)] font-bold text-sm shadow-[var(--shadow-card)] hover:opacity-95 transition-all"
+                className="bg-[var(--accent-primary)] text-white px-5 py-2.5 rounded-[var(--radius-card)] text-sm font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-2"
               >
-                Access Platform
+                Launch CarbonFlow
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 bg-[var(--surface-card)] text-[var(--ink)] border border-[var(--border-subtle)] px-6 py-3 rounded-[var(--radius-card)] font-bold text-sm hover:bg-[var(--surface-elevated)] transition-all shadow-sm"
+                className="bg-[var(--surface-card)] text-[var(--ink)] border border-[var(--border-subtle)] px-5 py-2.5 rounded-[var(--radius-card)] text-sm font-semibold hover:bg-[var(--surface-muted)] transition-all shadow-2xs"
               >
-                Sign In
+                Operator Login
               </Link>
             </SignedOut>
 
             <SignedIn>
               <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 bg-[var(--ink)] text-white px-6 py-3 rounded-[var(--radius-card)] font-bold text-sm shadow-[var(--shadow-card)] hover:bg-[var(--accent-primary)] transition-all"
+                to="/app/dashboard"
+                className="bg-[var(--accent-primary)] text-white px-5 py-2.5 rounded-[var(--radius-card)] text-sm font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-2"
               >
-                Launch CarbonFlow Console
+                Access Operating Console
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </SignedIn>
           </div>
         </div>
 
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 pt-12 border-t border-[var(--border-subtle)]">
-          <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-2">
-            <div className="w-9 h-9 rounded-lg bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] flex items-center justify-center mb-4">
-              <MapPin className="w-5 h-5" />
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-16 pt-12 border-t border-[var(--border-subtle)]">
+          <div className="p-5 rounded-[var(--radius-card)] bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg bg-[var(--surface-muted)] text-[var(--ink)] flex items-center justify-center mb-3">
+              <MapPin className="w-5 h-5 stroke-[1.8]" />
             </div>
-            <h3 className="font-semibold text-[15px] text-[var(--ink)]">Full-Bleed Routing Engine</h3>
-            <p className="text-[13px] text-[var(--text-secondary-accessible)] leading-relaxed">
-              Real-time Google Maps route planning with live carrier telemetry, corridor hazards, and transport modes.
+            <h3 className="font-semibold text-sm text-[var(--ink)]">Pipeline & Multi-Modal Routing</h3>
+            <p className="text-xs text-[var(--text-secondary-accessible)] leading-relaxed">
+              Automated route optimization across dedicated pipeline trunks, ISO rail cryogenic tankers, and port terminals with live telemetry.
             </p>
           </div>
 
-          <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-2">
-            <div className="w-9 h-9 rounded-lg bg-[#34C77B]/10 text-[var(--status-online)] flex items-center justify-center mb-4">
-              <Gauge className="w-5 h-5" />
+          <div className="p-5 rounded-[var(--radius-card)] bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg bg-[var(--surface-muted)] text-[var(--ink)] flex items-center justify-center mb-3">
+              <Gauge className="w-5 h-5 stroke-[1.8]" />
             </div>
-            <h3 className="font-semibold text-[15px] text-[var(--ink)]">Automated SCADA Telemetry</h3>
-            <p className="text-[13px] text-[var(--text-secondary-accessible)] leading-relaxed">
-              Pressure, cryogenic temperature, flow velocity, and purity tracking across all pipeline and ISO rail legs.
+            <h3 className="font-semibold text-sm text-[var(--ink)]">SCADA & Purity Validation</h3>
+            <p className="text-xs text-[var(--text-secondary-accessible)] leading-relaxed">
+              Continuous metrology streams verifying purity grades (99.8% DAC to 96% industrial off-gas) against contract thresholds in real time.
             </p>
           </div>
 
-          <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-2">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="p-5 rounded-[var(--radius-card)] bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg bg-[var(--surface-muted)] text-[var(--ink)] flex items-center justify-center mb-3">
+              <ShieldCheck className="w-5 h-5 stroke-[1.8]" />
             </div>
-            <h3 className="font-semibold text-[15px] text-[var(--ink)]">Verified Clearing House</h3>
-            <p className="text-[13px] text-[var(--text-secondary-accessible)] leading-relaxed">
-              Guaranteed offtake matching with ISO 27913 custody transfer compliance and automated clearing.
+            <h3 className="font-semibold text-sm text-[var(--ink)]">Audited Offtake Contracts</h3>
+            <p className="text-xs text-[var(--text-secondary-accessible)] leading-relaxed">
+              Immutable SHA-256 state tracking, automated settlement manifests, and complete MRV compliance under Indian carbon market guidelines.
             </p>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--border-subtle)] bg-[var(--paper)] py-6 px-4 sm:px-6 lg:px-8 mt-auto">
-        <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--text-secondary-accessible)]">
-          <div>© {new Date().getFullYear()} CarbonFlow Inc. All rights reserved.</div>
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1 text-[var(--status-online)] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-online)]" />
-              All Systems Operational
-            </span>
+      <footer className="border-t border-[var(--border-subtle)] py-6 bg-[var(--surface-card)]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[var(--text-secondary-accessible)]">
+          <div className="flex items-center gap-2">
+            <span>© 2026 CarbonFlow Infrastructure Platform</span>
+            <span>•</span>
+            <span>ISO 14064 MRV Certified</span>
+          </div>
+          <div className="flex gap-4">
+            <Link to="/app/logistics" className="hover:text-[var(--ink)]">Logistics</Link>
+            <Link to="/app/carbon-impact" className="hover:text-[var(--ink)]">Impact</Link>
+            <Link to="/app/alerts" className="hover:text-[var(--ink)]">SCADA Alerts</Link>
           </div>
         </div>
       </footer>
@@ -156,81 +160,56 @@ export function App() {
   // If Clerk publishable key is not set, run in resilient Demo Mode without crashing
   if (!clerkPubKey) {
     return (
-      <Router>
-        <Routes>
-          <Route
-            path="/app/carbon-impact"
-            element={<CarbonFlowShell isDemoMode={true} initialTab="carbon-impact" />}
-          />
-          <Route
-            path="/app/alerts"
-            element={<CarbonFlowShell isDemoMode={true} initialTab="alerts" />}
-          />
-          <Route
-            path="/app/audit-contracts"
-            element={<CarbonFlowShell isDemoMode={true} initialTab="audit-contracts" />}
-          />
-          <Route path="*" element={<CarbonFlowShell isDemoMode={true} />} />
-        </Routes>
-      </Router>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            {/* Protected App Routes */}
+            <Route path="/app/*" element={<CarbonFlowShell isDemoMode={true} />} />
+            {/* Backward-compatible redirects */}
+            <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/dashboard/*" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+            {/* Fallback to Home */}
+            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+          </Routes>
+        </Router>
+      </QueryClientProvider>
     );
   }
 
   return (
     <ClerkProvider publishableKey={clerkPubKey}>
-      <Router>
-        <Routes>
-          {/* Public Landing Page */}
-          <Route path="/" element={<LandingPage />} />
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Routes>
+            {/* Public Landing Page */}
+            <Route path="/" element={<LandingPage />} />
 
-          {/* Clerk Auth Pages */}
-          <Route path="/login/*" element={<LoginPage />} />
-          <Route path="/signup/*" element={<SignupPage />} />
+            {/* Clerk Auth Pages */}
+            <Route path="/login/*" element={<LoginPage />} />
+            <Route path="/signup/*" element={<SignupPage />} />
 
-          {/* Protected CarbonFlow Operations Shell */}
-          <Route
-            path="/dashboard/*"
-            element={
-              <AuthGuard>
-                <DashboardPage />
-              </AuthGuard>
-            }
-          />
+            {/* Canonical Operations Routes (Unified under /app/*) */}
+            <Route
+              path="/app/*"
+              element={
+                <AuthGuard>
+                  <DashboardPage />
+                </AuthGuard>
+              }
+            />
 
-          {/* Carbon Impact Dedicated Route */}
-          <Route
-            path="/app/carbon-impact"
-            element={
-              <AuthGuard>
-                <DashboardPage initialTab="carbon-impact" />
-              </AuthGuard>
-            }
-          />
+            {/* Backward compatibility redirects */}
+            <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/dashboard/*" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
 
-          {/* Alerts & SCADA Dedicated Route */}
-          <Route
-            path="/app/alerts"
-            element={
-              <AuthGuard>
-                <DashboardPage initialTab="alerts" />
-              </AuthGuard>
-            }
-          />
-
-          {/* Audit Contracts Dedicated Route */}
-          <Route
-            path="/app/audit-contracts"
-            element={
-              <AuthGuard>
-                <DashboardPage initialTab="audit-contracts" />
-              </AuthGuard>
-            }
-          />
-
-          {/* Fallback to Home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+          </Routes>
+        </Router>
+      </QueryClientProvider>
     </ClerkProvider>
   );
 }
