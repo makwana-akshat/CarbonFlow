@@ -1,12 +1,23 @@
 import { fetchWithAuth } from './api';
 
-export interface DashboardSummary {
-  kpis: any[];
-  market_prices: any[];
-}
+export const getDashboardKPIs = async (token: string | null): Promise<any> => {
+  return fetchWithAuth('/dashboard/kpis', token);
+};
 
-export const getDashboardSummary = async (token: string | null): Promise<DashboardSummary> => {
-  return fetchWithAuth('/dashboard/summary', token);
+export const getMarketPrices = async (token: string | null): Promise<any> => {
+  return fetchWithAuth('/dashboard/market-prices', token);
+};
+
+export const getSupplyDemand = async (token: string | null): Promise<any> => {
+  return fetchWithAuth('/dashboard/supply-demand', token);
+};
+
+export const getDashboardAlerts = async (token: string | null): Promise<any> => {
+  return fetchWithAuth('/dashboard/alerts', token);
+};
+
+export const getDashboardInsight = async (token: string | null): Promise<any> => {
+  return fetchWithAuth('/dashboard/ai-insight', token);
 };
 
 export const getActiveOrders = async (token: string | null): Promise<any[]> => {

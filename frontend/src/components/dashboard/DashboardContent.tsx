@@ -18,7 +18,13 @@ import { Card } from '../ui/Card';
 import { Skeleton, EmptyState, ErrorState } from '../ui/Feedback';
 import type { UserRole, DashboardState } from '../../types/dashboard';
 import { useAuth } from '@clerk/clerk-react';
-import { getDashboardSummary } from '../../services/dashboardApi';
+import { 
+  getDashboardKPIs,
+  getMarketPrices,
+  getSupplyDemand,
+  getDashboardAlerts,
+  getDashboardInsight
+} from '../../services/dashboardApi';
 
 interface DashboardContentProps {
   userRole: UserRole;
@@ -56,21 +62,32 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(6); // default to a recent point
   
   const { getToken } = useAuth();
-  const [apiSummary, setApiSummary] = useState<any>(null);
+  const [kpis, setKpis] = useState<any>(null);
+  const [chartDataState, setChartDataState] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [insight, setInsight] = useState<any>(null);
 
   React.useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchDashboard = async () => {
       try {
         const token = await getToken();
         if (token) {
-          const data = await getDashboardSummary(token);
-          setApiSummary(data);
+          const [kpisRes, supplyDemandRes, alertsRes, insightRes] = await Promise.all([
+            getDashboardKPIs(token),
+            getSupplyDemand(token),
+            getDashboardAlerts(token),
+            getDashboardInsight(token)
+          ]);
+          setKpis(kpisRes);
+          setChartDataState(supplyDemandRes?.items || []);
+          setAlerts(alertsRes?.items || []);
+          setInsight(insightRes);
         }
       } catch (err: any) {
         console.error(err);
       }
     };
-    fetchSummary();
+    fetchDashboard();
   }, [getToken, userRole]);
 
   // Dynamic organization name based on active persona
@@ -82,16 +99,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   // 2x2 Performance Metrics depending on Role and Period
   const performanceMetrics = useMemo(() => {
-    const periodLabel = selectedPeriod === 'day' 
-      ? 'yesterday' 
-      : selectedPeriod === 'week' 
-      ? 'last week' 
-      : selectedPeriod === 'month' 
-      ? 'last month' 
-      : 'last year';
-
-    if (apiSummary?.kpis) {
-      return apiSummary.kpis.map((kpi: any) => ({
+    if (kpis?.kpis) {
+      return kpis.kpis.map((kpi: any) => ({
         id: kpi.id,
         label: kpi.label,
         value: kpi.value,
@@ -99,111 +108,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         caption: kpi.period
       }));
     }
-
-    if (userRole === 'buyer') {
-      return [
-        {
-          id: 'req-posted',
-          label: 'Total Requirements Posted',
-          value: selectedPeriod === 'day' ? '2' : selectedPeriod === 'week' ? '7' : selectedPeriod === 'month' ? '18' : '142',
-          trend: { value: '+12.4%', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'matches-found',
-          label: 'Matches Found',
-          value: selectedPeriod === 'day' ? '5' : selectedPeriod === 'week' ? '19' : selectedPeriod === 'month' ? '42' : '386',
-          trend: { value: '+8.6%', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'active-orders',
-          label: 'Active Orders',
-          value: selectedPeriod === 'day' ? '6' : selectedPeriod === 'week' ? '6' : selectedPeriod === 'month' ? '6' : '38',
-          trend: { value: '+2 new', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'match-rate',
-          label: 'Match Rate',
-          value: '94.2%',
-          trend: { value: '+3.1%', isPositive: true },
-          caption: `from ${periodLabel}`
-        }
-      ];
-    } else {
-      // Supplier Role
-      return [
-        {
-          id: 'listing-views',
-          label: 'Listing Views',
-          value: selectedPeriod === 'day' ? '142' : selectedPeriod === 'week' ? '680' : selectedPeriod === 'month' ? '1,840' : '22,400',
-          trend: { value: '+24.5%', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'buyer-requests',
-          label: 'Buyer Requests',
-          value: selectedPeriod === 'day' ? '4' : selectedPeriod === 'week' ? '14' : selectedPeriod === 'month' ? '38' : '310',
-          trend: { value: '+14.2%', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'active-orders',
-          label: 'Active Orders',
-          value: selectedPeriod === 'day' ? '8' : selectedPeriod === 'week' ? '8' : selectedPeriod === 'month' ? '8' : '44',
-          trend: { value: '+3 new', isPositive: true },
-          caption: `from ${periodLabel}`
-        },
-        {
-          id: 'conversion-rate',
-          label: 'Conversion Rate',
-          value: '88.5%',
-          trend: { value: '+5.4%', isPositive: true },
-          caption: `from ${periodLabel}`
-        }
-      ];
-    }
-  }, [userRole, selectedPeriod]);
+    return []; // Return empty array until loaded
+  }, [kpis]);
 
   // Chart Data: CO2 Volume Traded (Supplier) or Procurement Spend (Buyer)
   const chartData: ChartPoint[] = useMemo(() => {
-    if (apiSummary?.chartData && apiSummary.chartData.length > 0) {
-      return apiSummary.chartData;
-    }
-
-    if (userRole === 'buyer') {
-      return [
-        { date: 'Jan 2024', label: 'Jan', value: 280, formattedValue: '₹2,800,000', delta: '+3.2%', isPositive: true },
-        { date: 'Feb 2024', label: 'Feb', value: 310, formattedValue: '₹3,100,000', delta: '+10.7%', isPositive: true },
-        { date: 'Mar 2024', label: 'Mar', value: 295, formattedValue: '₹2,950,000', delta: '-4.8%', isPositive: false },
-        { date: 'Apr 2024', label: 'Apr', value: 360, formattedValue: '₹3,600,000', delta: '+22.0%', isPositive: true },
-        { date: 'May 2024', label: 'May', value: 390, formattedValue: '₹3,900,000', delta: '+8.3%', isPositive: true },
-        { date: 'Jun 2024', label: 'Jun', value: 410, formattedValue: '₹4,100,000', delta: '+5.1%', isPositive: true },
-        { date: 'Jul 2024', label: 'Jul', value: 380, formattedValue: '₹3,800,000', delta: '-7.3%', isPositive: false },
-        { date: 'Aug 2024', label: 'Aug', value: 440, formattedValue: '₹4,400,000', delta: '+15.7%', isPositive: true },
-        { date: '24 Sep 2024', label: 'Sep', value: 465, formattedValue: '₹4,650,000', delta: '+5.6%', isPositive: true },
-        { date: 'Oct 2024', label: 'Oct', value: 490, formattedValue: '₹4,900,000', delta: '+5.3%', isPositive: true },
-        { date: 'Nov 2024', label: 'Nov', value: 520, formattedValue: '₹5,200,000', delta: '+6.1%', isPositive: true },
-        { date: 'Dec 2024', label: 'Dec', value: 560, formattedValue: '₹5,600,000', delta: '+7.6%', isPositive: true },
-      ];
-    } else {
-      return [
-        { date: 'Jan 2024', label: 'Jan', value: 650, formattedValue: '6,500 t', delta: '+4.1%', isPositive: true },
-        { date: 'Feb 2024', label: 'Feb', value: 720, formattedValue: '7,200 t', delta: '+10.7%', isPositive: true },
-        { date: 'Mar 2024', label: 'Mar', value: 690, formattedValue: '6,900 t', delta: '-4.1%', isPositive: false },
-        { date: 'Apr 2024', label: 'Apr', value: 840, formattedValue: '8,400 t', delta: '+21.7%', isPositive: true },
-        { date: 'May 2024', label: 'May', value: 910, formattedValue: '9,100 t', delta: '+8.3%', isPositive: true },
-        { date: 'Jun 2024', label: 'Jun', value: 980, formattedValue: '9,800 t', delta: '+7.6%', isPositive: true },
-        { date: 'Jul 2024', label: 'Jul', value: 940, formattedValue: '9,400 t', delta: '-4.0%', isPositive: false },
-        { date: 'Aug 2024', label: 'Aug', value: 1120, formattedValue: '11,200 t', delta: '+19.1%', isPositive: true },
-        { date: '24 Sep 2024', label: 'Sep', value: 1245, formattedValue: '12,450 t', delta: '+11.1%', isPositive: true },
-        { date: 'Oct 2024', label: 'Oct', value: 1310, formattedValue: '13,100 t', delta: '+5.2%', isPositive: true },
-        { date: 'Nov 2024', label: 'Nov', value: 1400, formattedValue: '14,000 t', delta: '+6.8%', isPositive: true },
-        { date: 'Dec 2024', label: 'Dec', value: 1520, formattedValue: '15,200 t', delta: '+8.5%', isPositive: true },
-      ];
-    }
-  }, [userRole, apiSummary]);
+    return chartDataState || [];
+  }, [chartDataState]);
 
   // SVG Chart path calculation
   const svgWidth = 640;
@@ -227,61 +138,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     return i === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`;
   }, '');
 
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${svgHeight - paddingY} L ${points[0].x} ${svgHeight - paddingY} Z`;
+  const areaD = points.length > 0 ? `${pathD} L ${points[points.length - 1].x} ${svgHeight - paddingY} L ${points[0].x} ${svgHeight - paddingY} Z` : '';
 
-  const activePoint = hoveredPointIndex !== null ? points[hoveredPointIndex] : points[8];
+  const activePoint = points.length > 0 ? (hoveredPointIndex !== null && points[hoveredPointIndex] ? points[hoveredPointIndex] : points[Math.min(8, points.length - 1)]) : null;
 
   // Right Column 2: Listings / Matches breakdown
   const summaryBreakdown = useMemo(() => {
-    if (apiSummary?.summaryBreakdown) {
-      return apiSummary.summaryBreakdown;
-    }
-    return userRole === 'buyer' ? [
-      { label: 'Active Requirements', count: 18 },
-      { label: 'Pending Matches', count: 6 },
-      { label: 'Completed Offtakes', count: 29 },
-    ] : [
-      { label: 'Active Listings', count: 14 },
-      { label: 'Pending Inquiries', count: 8 },
-      { label: 'Fulfilled Contracts', count: 42 },
-    ];
-  }, [userRole, apiSummary]);
+    return kpis?.summaryBreakdown || [];
+  }, [kpis]);
 
   // Right Column 3: Recent Activity items
-  const recentActivities = [
-    {
-      id: 'act-1',
-      avatar: 'TS',
-      name: 'Tata Steel Cleantech',
-      description: 'Requested 8,500 t offtake quote from Nordic Cryo',
-      time: '2 mins ago',
-      icon: FileText
-    },
-    {
-      id: 'act-2',
-      avatar: 'AC',
-      name: 'AeroCapture Synthetics',
-      description: 'Match confirmed: 94.1% assay with Hazira Cluster',
-      time: '14 mins ago',
-      icon: CheckCircle2
-    },
-    {
-      id: 'act-3',
-      avatar: 'VC',
-      name: 'Veritas Carbon Terminals',
-      description: 'Barge custody transfer cleared for Mundra Hub',
-      time: '1 hr ago',
-      icon: Activity
-    },
-    {
-      id: 'act-4',
-      avatar: 'HG',
-      name: 'Heidelberg Green Aggregates',
-      description: 'Published 12,000 t biogenic supply requirement',
-      time: '3 hrs ago',
-      icon: Building2
-    }
-  ];
+  const recentActivities = useMemo(() => {
+    return alerts || [];
+  }, [alerts]);
 
   if (dashboardState === 'loading') {
     return (
@@ -562,7 +431,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                   {userRole === 'buyer' ? 'Procurement Spend' : 'CO₂ Volume Traded'}
                 </h2>
                 <div className="text-[24px] sm:text-[26px] font-semibold tracking-tight text-[var(--ink)] mt-0.5">
-                  {userRole === 'buyer' ? '₹4,650,000' : '12,450 t'}
+                  {chartData.length > 0 && chartData[chartData.length - 1]?.formattedValue ? chartData[chartData.length - 1].formattedValue : '0'}
                 </div>
               </div>
 
@@ -737,17 +606,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                   CarbonFlow Advisor
                 </div>
                 <h3 className="text-[14px] font-semibold text-[var(--ink)] leading-snug">
-                  {userRole === 'buyer' 
-                    ? 'New Dahej shortage risk detected'
-                    : 'Regional price arbitrage active'}
+                  {insight?.title || (userRole === 'buyer' ? 'Requirement Match Analysis' : 'Listing Performance Analysis')}
                 </h3>
               </div>
             </div>
 
             <p className="text-[12px] text-[var(--text-secondary-accessible)] leading-relaxed">
-              {userRole === 'buyer'
-                ? 'Pipeline maintenance on Dahej Trunk starts Thursday. Shift 4,000 t to ISO rail tanker to maintain unbroken capture credit balance.'
-                : 'Spot purity premium currently +₹240/t at Hazira Industrial Park. 2 buyers looking for urgent spot offtake.'}
+              {insight?.insight || 'Sufficient data is not yet available to generate insights.'}
             </p>
 
             <div className="pt-1">

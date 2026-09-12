@@ -16,35 +16,24 @@ class DashboardService:
         self.market_repo = MarketplaceRepository()
         self.db = get_supabase_client()
 
-    def get_summary(self, clerk_user_id: str):
-        user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
-        if not user:
-            raise Exception("User not found in internal DB")
-
+    def get_kpis(self, clerk_user_id: str):
+        user = self._get_internal_user_id(clerk_user_id)
         role = user["role"]
         user_id = user["id"]
         
         if role == "buyer":
-            # Total Requirements Posted
             req_count = self.db.table("co2_requests").select("id", count="exact").eq("buyer_id", user_id).execute().count or 0
-            
-            # Matches Found (recommendations)
             matches_count = self.db.table("recommendations").select("id", count="exact").eq("user_id", user_id).execute().count or 0
-            
-            # Active Orders
-            active_orders_count = self.db.table("orders").select("id", count="exact").eq("buyer_id", user_id).neq("status", "completed").execute().count or 0
-            
-            # Match Rate
+            active_orders_count = self.db.table("orders").select("id", count="exact").eq("buyer_id", user_id).neq("status", "completed").neq("status", "cancelled").execute().count or 0
             match_rate = f"{(matches_count / req_count * 100):.1f}%" if req_count > 0 else "0.0%"
             
             kpis = [
                 {"id": "req-posted", "label": "Total Requirements Posted", "value": str(req_count), "trend": {"value": "+0 new", "isPositive": True}, "period": "from last month"},
                 {"id": "matches-found", "label": "Matches Found", "value": str(matches_count), "trend": {"value": "+0", "isPositive": True}, "period": "from last month"},
-                {"id": "active-orders", "label": "Active Orders", "value": str(active_orders_count), "trend": {"value": "0 in transit", "isPositive": True}, "period": "from last month"},
+                {"id": "active-orders", "label": "Active Orders", "value": str(active_orders_count), "trend": {"value": "0 new", "isPositive": True}, "period": "from last month"},
                 {"id": "match-rate", "label": "Match Rate", "value": match_rate, "trend": {"value": "+0.0%", "isPositive": True}, "period": "from last month"}
             ]
             
-            # Summary Breakdown
             active_reqs = self.db.table("co2_requests").select("id", count="exact").eq("buyer_id", user_id).eq("status", "active").execute().count or 0
             completed_offtakes = self.db.table("orders").select("id", count="exact").eq("buyer_id", user_id).eq("status", "completed").execute().count or 0
             summary_breakdown = [
@@ -52,17 +41,10 @@ class DashboardService:
                 {"label": "Pending Matches", "count": matches_count},
                 {"label": "Completed Offtakes", "count": completed_offtakes},
             ]
-            
         else: # supplier
-            # Active Listings
             listings_count = self.db.table("co2_listings").select("id", count="exact").eq("supplier_id", user_id).eq("status", "active").execute().count or 0
-            
-            # Buyer Requests (match count)
             buyer_requests = self.db.table("recommendations").select("id", count="exact").eq("user_id", user_id).execute().count or 0
-            
-            # Active Orders
-            active_orders_count = self.db.table("orders").select("id", count="exact").eq("supplier_id", user_id).neq("status", "completed").execute().count or 0
-            
+            active_orders_count = self.db.table("orders").select("id", count="exact").eq("supplier_id", user_id).neq("status", "completed").neq("status", "cancelled").execute().count or 0
             conversion_rate = f"{(active_orders_count / buyer_requests * 100):.1f}%" if buyer_requests > 0 else "0.0%"
             
             kpis = [
@@ -72,7 +54,6 @@ class DashboardService:
                 {"id": "conversion-rate", "label": "Conversion Rate", "value": conversion_rate, "trend": {"value": "+0.0%", "isPositive": True}, "period": "from last month"}
             ]
             
-            # Summary Breakdown
             pending_inquiries = buyer_requests
             fulfilled_contracts = self.db.table("orders").select("id", count="exact").eq("supplier_id", user_id).eq("status", "completed").execute().count or 0
             summary_breakdown = [
@@ -81,14 +62,21 @@ class DashboardService:
                 {"label": "Fulfilled Contracts", "count": fulfilled_contracts},
             ]
             
+        return {
+            "kpis": kpis,
+            "summaryBreakdown": summary_breakdown
+        }
+
+    def get_supply_demand(self, clerk_user_id: str):
+        user = self._get_internal_user_id(clerk_user_id)
+        role = user["role"]
+        user_id = user["id"]
         
-        # Calculate Chart Data (last 12 months)
         chart_data = []
         orders_resp = self.db.table("orders").select("created_at, total_value, volume").eq("buyer_id" if role == "buyer" else "supplier_id", user_id).execute()
         orders = orders_resp.data if orders_resp else []
         
         today = datetime.today()
-        # Create a bucket for each of the last 12 months
         months = []
         for i in range(11, -1, -1):
             month_offset = today.month - i - 1
@@ -102,7 +90,6 @@ class DashboardService:
                 "value": 0
             })
             
-        # Accumulate values
         for order in orders:
             try:
                 order_dt = datetime.fromisoformat(order["created_at"].replace("Z", "+00:00"))
@@ -113,7 +100,6 @@ class DashboardService:
             except Exception:
                 pass
                 
-        # Format for frontend
         prev_value = 0
         for m in months:
             val = m["value"]
@@ -124,7 +110,6 @@ class DashboardService:
             
             is_positive = delta_val >= 0
             delta_str = f"+{delta_val:.1f}%" if is_positive else f"{delta_val:.1f}%"
-            
             formatted_val = f"₹{val:,.0f}" if role == "buyer" else f"{val:,.0f} t"
             
             chart_data.append({
@@ -137,8 +122,88 @@ class DashboardService:
             })
             prev_value = val
 
+        return {"items": chart_data}
+        
+    def get_market_prices(self, clerk_user_id: str):
+        # Empty array since frontend doesn't need market-prices chart right now
+        return {"items": []}
+        
+    def get_alerts(self, clerk_user_id: str):
+        user = self._get_internal_user_id(clerk_user_id)
+        role = user["role"]
+        user_id = user["id"]
+        
+        alerts = []
+        
+        # Get latest 4 orders
+        orders_resp = self.db.table("orders").select("id, status, created_at, volume, supplier:supplier_id(company_name), buyer:buyer_id(company_name)").eq("buyer_id" if role == "buyer" else "supplier_id", user_id).order("created_at", desc=True).limit(4).execute()
+        
+        if orders_resp and orders_resp.data:
+            for o in orders_resp.data:
+                counterparty = o["supplier"]["company_name"] if role == "buyer" else o["buyer"]["company_name"]
+                
+                # Format time nicely (just placeholder format, normally we'd do a timeago function)
+                dt = datetime.fromisoformat(o["created_at"].replace("Z", "+00:00"))
+                time_str = dt.strftime("%b %d, %H:%M")
+                
+                msg = ""
+                icon = "Activity"
+                if o["status"] == "pending":
+                    msg = f"Requested {o['volume']} t offtake quote with {counterparty}" if role == "buyer" else f"Received {o['volume']} t offtake request from {counterparty}"
+                    icon = "FileText"
+                elif o["status"] == "confirmed":
+                    msg = f"Match confirmed: {o['volume']} t agreement with {counterparty}"
+                    icon = "CheckCircle2"
+                elif o["status"] == "delivered":
+                    msg = f"Delivery completed for {o['volume']} t to {counterparty}"
+                    icon = "Activity"
+                elif o["status"] == "cancelled":
+                    msg = f"Order cancelled for {o['volume']} t with {counterparty}"
+                    icon = "X"
+                else:
+                    msg = f"Order {o['status']} for {o['volume']} t with {counterparty}"
+                    icon = "Activity"
+                
+                alerts.append({
+                    "id": f"act-{o['id']}",
+                    "avatar": (counterparty or "NA")[0:2].upper(),
+                    "name": counterparty or "Unknown Company",
+                    "description": msg,
+                    "time": time_str,
+                    "icon": icon
+                })
+                
+        return {"items": alerts}
+        
+    def get_ai_insight(self, clerk_user_id: str):
+        user = self._get_internal_user_id(clerk_user_id)
+        role = user["role"]
+        user_id = user["id"]
+        
+        # Calculate true deterministic insight
+        active_listings_resp = self.db.table("co2_listings").select("volume_tpa").eq("status", "active").execute()
+        active_requests_resp = self.db.table("co2_requests").select("quantity_needed").eq("status", "active").execute()
+        
+        total_supply = sum([float(x["volume_tpa"]) for x in active_listings_resp.data]) if active_listings_resp and active_listings_resp.data else 0
+        total_demand = sum([float(x["quantity_needed"]) for x in active_requests_resp.data]) if active_requests_resp and active_requests_resp.data else 0
+        
+        if total_supply > total_demand:
+            diff = total_supply - total_demand
+            title = "Oversupply Detected"
+            msg = f"The network currently has {diff:,.0f} t more active supply than demand. It is a buyer's market."
+        else:
+            diff = total_demand - total_supply
+            title = "Shortage Risk Detected"
+            msg = f"The network currently has {diff:,.0f} t more active demand than supply. Expect spot premiums."
+            
+        # Optional: tailor it slightly by role
+        if role == "buyer":
+            if total_supply > total_demand:
+                msg += " Great time to lock in long-term contracts."
+            else:
+                msg += " Shift flexible requirements to later dates if possible."
+                
         return {
-            "kpis": kpis,
-            "summaryBreakdown": summary_breakdown,
-            "chartData": chart_data
+            "title": title,
+            "insight": msg
         }
