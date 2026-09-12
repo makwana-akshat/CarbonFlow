@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment
+.env
+
+# Agent and Tool Artifacts
+.agent
+.agents
+.codex
+.impeccable
+skills-lock.json
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
