@@ -8,12 +8,12 @@ def run_migration():
     conn.autocommit = True
     cursor = conn.cursor()
     
-    with open("migrations/004_update_co2_requests.sql", "r") as f:
+    with open("migrations/010_alerts_schema_enhancement.sql", "r") as f:
         sql = f.read()
     
     try:
         cursor.execute(sql)
-        print("Migration 004 applied successfully.")
+        print("Migration 010 applied successfully.")
     except Exception as e:
         print(f"Error applying migration: {e}")
     finally:

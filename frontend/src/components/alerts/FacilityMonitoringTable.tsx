@@ -1,6 +1,6 @@
 import React from 'react';
 import { Factory } from 'lucide-react';
-import { type FacilityMonitoringItem } from '../../data/alertsMock';
+import { type FacilityMonitoringItem } from '../../types/alerts';
 
 export interface FacilityMonitoringTableProps {
   facilities: FacilityMonitoringItem[];
@@ -70,8 +70,8 @@ export const FacilityMonitoringTable: React.FC<FacilityMonitoringTableProps> = (
 
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-[var(--ink)]">
-                        {fac.captureOutput}%
+                      <span className="font-semibold">
+                        {fac.captureOutput ?? 'N/A'}%
                       </span>
                       <div className="w-16 h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden hidden sm:block">
                         <div
@@ -82,14 +82,14 @@ export const FacilityMonitoringTable: React.FC<FacilityMonitoringTableProps> = (
                                 ? 'bg-[var(--status-warning)]'
                                 : 'bg-[var(--status-success)]'
                           }`}
-                          style={{ width: `${Math.min(fac.captureOutput, 100)}%` }}
+                          style={{ width: `${Math.min(fac.captureOutput ?? 0, 100)}%` }}
                         />
                       </div>
                     </div>
                   </td>
 
                   <td className="py-2.5 px-3 font-mono text-[var(--text-secondary-accessible)]">
-                    {fac.expectedOutput}%
+                    {fac.expectedOutput ?? 'N/A'}%
                   </td>
 
                   <td className="py-2.5 px-3">

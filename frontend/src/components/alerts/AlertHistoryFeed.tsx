@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, History } from 'lucide-react';
-import { type AlertHistoryItem } from '../../data/alertsMock';
+import { type AlertHistoryItem } from '../../types/alerts';
 
 export interface AlertHistoryFeedProps {
   history: AlertHistoryItem[];
