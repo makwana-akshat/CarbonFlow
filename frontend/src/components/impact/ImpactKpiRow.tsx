@@ -2,7 +2,7 @@ import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { TrendingUp, CheckCircle2, ShieldCheck, Factory } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
-import { getImpactMetrics } from '../../services/impactApi';
+import { getImpactOverview } from '../../services/impactApi';
 
 export const ImpactKpiRow: React.FC = () => {
   const { overviewMetrics } = useCarbonImpact();
@@ -15,7 +15,7 @@ export const ImpactKpiRow: React.FC = () => {
       try {
         const token = await getToken();
         if (!token) return;
-        const apiData = await getImpactMetrics(token);
+        const apiData = await getImpactOverview(token);
         if (apiData) {
           const updated = [...overviewMetrics];
           // Override the "Utilized" (index 3) metric with real backend data

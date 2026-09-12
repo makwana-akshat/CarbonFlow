@@ -21,9 +21,15 @@ def generate_audit_hash(contract_data: dict) -> str:
     serialized = json.dumps(canonical, sort_keys=True)
     return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
 
+from app.core.config import settings
+from supabase import create_client
+
+def get_supabase_client():
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+
 class ContractService:
-    def __init__(self, supabase):
-        self.supabase = supabase
+    def __init__(self):
+        self.supabase = get_supabase_client()
 
     def create_contract(self, user_id: str, payload: ContractCreate):
         # Verify order
