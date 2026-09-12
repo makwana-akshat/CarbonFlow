@@ -151,7 +151,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
 
   // Filtered & Sorted Recommendations
   const currentRecommendations = useMemo(() => {
-    const rawList = apiRecommendations.length > 0 ? apiRecommendations : (RECOMMENDATIONS_DATA[userRole] || []);
+    const rawList = apiRecommendations;
 
     return rawList.filter((item) => {
       if (filterState.searchQuery) {
