@@ -47,8 +47,9 @@ export const createListing = async (token: string | null, data: Partial<CO2Listi
   });
 };
 
-export const getAllRequirements = async (token: string | null): Promise<any> => {
-  return fetchWithAuth('/marketplace/requirements', token);
+export const getAllRequirements = async (token: string | null, params?: URLSearchParams): Promise<any> => {
+  const query = params ? `?${params.toString()}` : '';
+  return fetchWithAuth(`/marketplace/requirements${query}`, token);
 };
 
 export const getMyRequirements = async (token: string | null): Promise<any[]> => {

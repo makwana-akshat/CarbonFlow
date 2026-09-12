@@ -21,6 +21,7 @@ import { AuditContractsPage } from '../contracts/AuditContractsPage';
 import { AssistantWidget } from '../assistant/AssistantWidget';
 import { useAuth } from '@clerk/clerk-react';
 import { getActiveOrders } from '../../services/dashboardApi';
+import { getOrders } from '../../services/orderApi';
 import { getRecommendations } from '../../services/recommendationsApi';
 
 export interface CarbonFlowShellProps {
@@ -50,11 +51,7 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   const { getToken } = useAuth();
-  const [activeOrders, setActiveOrders] = useState<any[]>([
-    { id: 'ORD-8921', supplier: 'Nordic Cryo Carbon', volume: '8,500 t', mode: 'ISO Rail', status: 'In Transit', eta: 'Tomorrow 08:30', progress: 75 },
-    { id: 'ORD-8919', supplier: 'AeroCapture Synthetics', volume: '14,200 t', mode: 'Pipeline Trunk', status: 'Continuous Flow', eta: 'Active Telemetry', progress: 100 },
-    { id: 'ORD-8914', supplier: 'Veritas Carbon Terminals', volume: '22,000 t', mode: 'Marine Barge', status: 'Loading at Hub', eta: '3 days', progress: 30 }
-  ]);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
 
   useEffect(() => {
     if (activeTab === 'orders') {
@@ -62,18 +59,20 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
         try {
           const token = await getToken();
           if (!token) return;
-          const res = await getActiveOrders(token);
-          if (res && res.length > 0) {
-            const mapped = res.map(o => ({
+          const res = await getOrders(token);
+          if (res && res.items && res.items.length > 0) {
+            const mapped = res.items.map((o: any) => ({
               id: `ORD-${o.id.substring(0,4).toUpperCase()}`,
               supplier: o.supplier ? `${o.supplier.first_name} ${o.supplier.last_name || ''}`.trim() : (o.buyer ? `${o.buyer.first_name} ${o.buyer.last_name || ''}`.trim() : 'Unknown'),
               volume: `${o.volume.toLocaleString()} t`,
               mode: o.transport_mode,
               status: o.status,
               eta: o.eta ? new Date(o.eta).toLocaleDateString() : 'Active Telemetry',
-              progress: 50
+              progress: o.status === 'delivered' ? 100 : (o.status === 'in-transit' ? 70 : (o.status === 'loading' ? 40 : (o.status === 'confirmed' ? 20 : 0)))
             }));
             setActiveOrders(mapped);
+          } else {
+            setActiveOrders([]);
           }
         } catch (e) {
           console.error(e);

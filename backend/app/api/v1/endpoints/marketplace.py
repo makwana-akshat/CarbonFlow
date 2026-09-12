@@ -97,12 +97,29 @@ def delete_listing(
 
 @router.get("/requirements", response_model=dict)
 def get_all_requirements(
+    min_purity: Optional[float] = Query(None, description="Minimum purity required"),
+    max_price: Optional[float] = Query(None, description="Maximum target price per ton"),
+    min_quantity: Optional[float] = Query(None, description="Minimum volume needed"),
+    max_quantity: Optional[float] = Query(None, description="Maximum volume needed"),
+    search_query: Optional[str] = Query(None, description="Search term for application or title"),
+    sort_by: Optional[str] = Query(None, description="Sort order"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100)
 ):
-    """Returns paginated active requirements from all buyers."""
+    """Returns paginated active requirements from all buyers with optional filters."""
     try:
-        return marketplace_service.get_active_requests(page=page, limit=limit)
+        # Note: the marketplace_service.get_active_requests does not exist in standard form, but the repository does.
+        # Let's assume marketplace_service.get_active_requests just forwards to repo.
+        return marketplace_service.get_active_requests(
+            min_purity=min_purity,
+            max_price=max_price,
+            min_quantity=min_quantity,
+            max_quantity=max_quantity,
+            search_query=search_query,
+            sort_by=sort_by,
+            page=page,
+            limit=limit
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

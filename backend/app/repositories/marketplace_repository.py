@@ -34,9 +34,8 @@ class MarketplaceRepository:
         if max_quantity is not None:
             query = query.lte("volume_tpa", max_quantity)
         
-        # In a real app we might do text search on facility_name, here we do a basic ilike if search_query
         if search_query:
-            query = query.ilike("facility_name", f"%{search_query}%")
+            query = query.or_(f"facility_name.ilike.%{search_query}%,co2_grade.ilike.%{search_query}%")
             
         if sort_by:
             if sort_by == 'purityDesc':
@@ -47,6 +46,9 @@ class MarketplaceRepository:
                 query = query.order("price_per_ton", desc=True)
             elif sort_by == 'quantityDesc':
                 query = query.order("volume_tpa", desc=True)
+            elif sort_by == 'distanceAsc':
+                # Mock geospatial sorting by falling back to cheapest price for now
+                query = query.order("price_per_ton", desc=False)
         else:
             query = query.order("created_at", desc=True)
             
@@ -82,11 +84,43 @@ class MarketplaceRepository:
     # Requests
     def get_active_requests(
         self,
+        min_purity: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_quantity: Optional[float] = None,
+        max_quantity: Optional[float] = None,
+        search_query: Optional[str] = None,
+        sort_by: Optional[str] = None,
         page: int = 1,
         limit: int = 20
     ) -> dict:
         query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)", count="exact").eq("status", "active")
-        query = query.order("created_at", desc=True)
+        
+        if min_purity is not None:
+            query = query.gte("min_purity_required", min_purity)
+        if max_price is not None:
+            query = query.lte("target_price", max_price)
+        if min_quantity is not None:
+            query = query.gte("volume_needed", min_quantity)
+        if max_quantity is not None:
+            query = query.lte("volume_needed", max_quantity)
+            
+        if search_query:
+            query = query.or_(f"application.ilike.%{search_query}%,title.ilike.%{search_query}%,location.ilike.%{search_query}%")
+            
+        if sort_by:
+            if sort_by == 'purityDesc':
+                query = query.order("min_purity_required", desc=True)
+            elif sort_by == 'priceAsc':
+                query = query.order("target_price", desc=False)
+            elif sort_by == 'priceDesc':
+                query = query.order("target_price", desc=True)
+            elif sort_by == 'quantityDesc':
+                query = query.order("volume_needed", desc=True)
+            elif sort_by == 'distanceAsc':
+                # Mock geospatial sorting by falling back to lowest quantity needed
+                query = query.order("volume_needed", desc=False)
+        else:
+            query = query.order("created_at", desc=True)
         
         start = (page - 1) * limit
         end = start + limit - 1

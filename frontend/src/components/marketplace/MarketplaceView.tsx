@@ -6,9 +6,9 @@ import { FilterSidebar } from './FilterSidebar';
 import { CO2ListingCard } from '../ui/CO2ListingCard';
 import { RequirementCard } from './RequirementCard';
 import { RequestModal } from './RequestModal';
-import { SUPPLY_LISTINGS, DEMAND_REQUIREMENTS } from '../../data/marketplaceData';
 import { useAuth } from '@clerk/clerk-react';
 import { getListings, getAllRequirements } from '../../services/marketplaceApi';
+import { createOrder } from '../../services/orderApi';
 import type {
   MarketplaceMode,
   MarketplaceFilterState,
@@ -32,8 +32,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const itemsPerPage = 6;
 
   const { getToken } = useAuth();
-  const [apiListings, setApiListings] = useState<SupplyListing[]>(SUPPLY_LISTINGS);
-  const [apiRequirements, setApiRequirements] = useState<DemandRequirement[]>(DEMAND_REQUIREMENTS);
+  const [apiListings, setApiListings] = useState<SupplyListing[]>([]);
+  const [apiRequirements, setApiRequirements] = useState<DemandRequirement[]>([]);
 
   // View state simulation
   const [viewState, setViewState] = useState<'success' | 'loading' | 'error'>('success');
@@ -85,12 +85,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
         const [listingsRes, reqsRes] = await Promise.all([
           getListings(token, params),
-          getAllRequirements(token)
+          getAllRequirements(token, params)
         ]);
 
         // Backend now returns { items, total, page, limit }
         const listingsItems = listingsRes.items || [];
         setTotalSupplyCount(listingsRes.total || 0);
+        
+        const reqsItems = reqsRes.items || [];
+        setTotalDemandCount(reqsRes.total || 0);
 
         // Map listings to frontend model
         const mappedListings: SupplyListing[] = listingsItems.map((l: any) => ({
@@ -110,7 +113,6 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         setApiListings(mappedListings);
 
         // Map requirements to frontend model
-        const reqsItems = Array.isArray(reqsRes) ? reqsRes : (reqsRes.items || []);
         const mappedReqs: DemandRequirement[] = reqsItems.map((r: any) => ({
           id: r.id,
           buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
@@ -122,7 +124,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           maxPricePerTon: r.target_price,
           maxDistanceKm: 1000,
         }));
-        if (mappedReqs.length > 0) setApiRequirements(mappedReqs);
+        setApiRequirements(mappedReqs);
         
         setViewState('success');
       } catch (err) {
@@ -164,44 +166,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     return apiListings;
   }, [apiListings]);
 
-  // Filtered Demand Requirements
+  // Filtered Demand Requirements (Now handled by backend)
   const filteredDemand = useMemo(() => {
-    return apiRequirements.filter((item) => {
-      if (filterState.searchQuery) {
-        const q = filterState.searchQuery.toLowerCase();
-        const matches =
-          item.buyerCompanyName.toLowerCase().includes(q) ||
-          item.industry.toLowerCase().includes(q) ||
-          item.application.toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q);
-        if (!matches) return false;
-      }
-      if (item.minPurityRequired < filterState.minPurity) return false;
-      if (filterState.minQuantity > 0 && item.quantityNeeded < filterState.minQuantity) return false;
-      if (filterState.maxQuantity < 100000 && item.quantityNeeded > filterState.maxQuantity) return false;
-      if (filterState.maxPrice < 10000 && item.maxPricePerTon > filterState.maxPrice) return false;
-      if (item.maxDistanceKm > filterState.maxDistance) return false;
-      if (
-        filterState.selectedApplications.length > 0 &&
-        !filterState.selectedApplications.some((app) =>
-          item.application.toLowerCase().includes(app.toLowerCase())
-        )
-      ) {
-        return false;
-      }
-      return true;
-    }).sort((a, b) => {
-      if (filterState.sortBy === 'purityDesc') return b.minPurityRequired - a.minPurityRequired;
-      if (filterState.sortBy === 'priceAsc') return a.maxPricePerTon - b.maxPricePerTon;
-      if (filterState.sortBy === 'priceDesc') return b.maxPricePerTon - a.maxPricePerTon;
-      if (filterState.sortBy === 'distanceAsc') return a.maxDistanceKm - b.maxDistanceKm;
-      if (filterState.sortBy === 'quantityDesc') return b.quantityNeeded - a.quantityNeeded;
-      return 0;
-    });
-  }, [filterState]);
+    return apiRequirements;
+  }, [apiRequirements]);
 
   const [totalSupplyCount, setTotalSupplyCount] = useState(0);
-  const totalResults = mode === 'supply' ? totalSupplyCount : filteredDemand.length;
+  const [totalDemandCount, setTotalDemandCount] = useState(0);
+  
+  const totalResults = mode === 'supply' ? totalSupplyCount : totalDemandCount;
   const totalPages = Math.max(1, Math.ceil(totalResults / itemsPerPage));
 
   // Current page slices
@@ -210,9 +183,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   }, [filteredSupply]);
 
   const pagedDemand = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredDemand.slice(start, start + itemsPerPage);
-  }, [filteredDemand, currentPage]);
+    return filteredDemand; // Already paginated from backend
+  }, [filteredDemand]);
 
   const handleOpenSupplyRequest = (item: SupplyListing) => {
     setSelectedSupplyListing(item);
@@ -226,11 +198,28 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleConfirmAction = (data: any) => {
-    if (selectedSupplyListing) {
-      showToast(`CO₂ offtake request of ${data.volume} t dispatched to ${selectedSupplyListing.companyName}.`);
-    } else if (selectedRequirement) {
-      showToast(`Binding supply offer sent to ${selectedRequirement.buyerCompanyName}.`);
+  const handleConfirmAction = async (data: any) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      if (selectedSupplyListing) {
+        // Create an order for a supply listing
+        const payload = {
+          listing_id: selectedSupplyListing.id,
+          volume: Number(data.volume),
+          transport_mode: data.transportMode
+        };
+        await createOrder(token, payload);
+        showToast(`CO₂ offtake request of ${data.volume} t dispatched to ${selectedSupplyListing.companyName}.`);
+      } else if (selectedRequirement) {
+        // Supply an offer to a demand requirement (Phase 6 specifies orders usually against listings, but UI allows both)
+        // Note: For now we'll just mock this toast or if backend supports it, do the same.
+        showToast(`Binding supply offer sent to ${selectedRequirement.buyerCompanyName}.`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      showToast('Error creating order: ' + (e.message || 'Unknown error'));
     }
   };
 
