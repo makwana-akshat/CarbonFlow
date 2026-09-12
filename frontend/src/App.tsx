@@ -162,6 +162,14 @@ export function App() {
             path="/app/carbon-impact"
             element={<CarbonFlowShell isDemoMode={true} initialTab="carbon-impact" />}
           />
+          <Route
+            path="/app/alerts"
+            element={<CarbonFlowShell isDemoMode={true} initialTab="alerts" />}
+          />
+          <Route
+            path="/app/audit-contracts"
+            element={<CarbonFlowShell isDemoMode={true} initialTab="audit-contracts" />}
+          />
           <Route path="*" element={<CarbonFlowShell isDemoMode={true} />} />
         </Routes>
       </Router>
@@ -195,6 +203,26 @@ export function App() {
             element={
               <AuthGuard>
                 <DashboardPage initialTab="carbon-impact" />
+              </AuthGuard>
+            }
+          />
+
+          {/* Alerts & SCADA Dedicated Route */}
+          <Route
+            path="/app/alerts"
+            element={
+              <AuthGuard>
+                <DashboardPage initialTab="alerts" />
+              </AuthGuard>
+            }
+          />
+
+          {/* Audit Contracts Dedicated Route */}
+          <Route
+            path="/app/audit-contracts"
+            element={
+              <AuthGuard>
+                <DashboardPage initialTab="audit-contracts" />
               </AuthGuard>
             }
           />

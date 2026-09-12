@@ -16,6 +16,9 @@ import { Button } from '../ui/Button';
 import { CheckCircle2, Menu } from 'lucide-react';
 import { UserMenu } from '../auth/UserMenu';
 import { CarbonImpactPage } from '../impact/CarbonImpactPage';
+import { AlertsPage } from '../alerts/AlertsPage';
+import { AuditContractsPage } from '../contracts/AuditContractsPage';
+import { AssistantWidget } from '../assistant/AssistantWidget';
 
 export interface CarbonFlowShellProps {
   appUser?: {
@@ -191,7 +194,15 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                 </span>
                 <span className="text-[var(--text-secondary)]">/</span>
                 <h1 className="text-[15px] font-semibold text-[var(--ink)] capitalize">
-                  {activeTab === 'ui-gallery' ? 'UI Kit Gallery' : activeTab === 'carbon-impact' ? 'Carbon Impact' : activeTab}
+                  {activeTab === 'ui-gallery' 
+                    ? 'UI Kit Gallery' 
+                    : activeTab === 'carbon-impact' 
+                      ? 'Carbon Impact' 
+                      : activeTab === 'alerts' 
+                        ? 'Alerts & SCADA' 
+                        : activeTab === 'audit-contracts' 
+                          ? 'Audit Contracts' 
+                          : activeTab}
                 </h1>
               </div>
             </div>
@@ -362,6 +373,16 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                   {activeTab === 'carbon-impact' && (
                     <CarbonImpactPage />
                   )}
+
+                  {/* Alerts & SCADA Tab */}
+                  {activeTab === 'alerts' && (
+                    <AlertsPage />
+                  )}
+
+                  {/* Audit Contracts Tab */}
+                  {activeTab === 'audit-contracts' && (
+                    <AuditContractsPage />
+                  )}
                 </>
               )}
             </main>
@@ -417,6 +438,9 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
         onClose={() => setIsDrawerOpen(false)}
         onConfirmOfftake={handleConfirmOfftake}
       />
+
+      {/* Global AI Assistant Siri Orb & Voice-Enabled Chat Widget */}
+      <AssistantWidget activeTab={activeTab} />
     </div>
   );
 };

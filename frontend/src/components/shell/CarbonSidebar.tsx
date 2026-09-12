@@ -13,14 +13,12 @@ import {
   Leaf, 
   Bell, 
   ShieldCheck, 
-  Terminal, 
-  Blocks, 
   Settings, 
   LogOut, 
   ChevronDown, 
   ChevronRight, 
-  Plus, 
   ChevronLeft, 
+  Plus, 
   Check, 
   X,
   Map
@@ -54,7 +52,6 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
 
   // Expandable section groups state
   const [isImpactOpen, setIsImpactOpen] = useState(true);
-  const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(true);
 
   // Auto-collapse on tablet screens (<1024px)
   useEffect(() => {
@@ -324,8 +321,8 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                 <div className="flex flex-col gap-0.5 pl-3">
                   {[
                     { id: 'carbon-impact' as TabId, label: 'Carbon Impact', icon: Leaf },
-                    { id: 'overview' as TabId, label: 'Alerts & SCADA', icon: Bell, badge: '2' },
-                    { id: 'orders' as TabId, label: 'Audit Contracts', icon: ShieldCheck }
+                    { id: 'alerts' as TabId, label: 'Alerts & SCADA', icon: Bell, badge: '2' },
+                    { id: 'audit-contracts' as TabId, label: 'Audit Contracts', icon: ShieldCheck }
                   ].map((sub) => {
                     const isActive = activeTab === sub.id;
                     return (
@@ -352,48 +349,6 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
                       </button>
                     );
                   })}
-                </div>
-              )}
-            </div>
-
-            {/* Group B: Integrations */}
-            <div className="space-y-0.5">
-              <div className="group flex items-center justify-between px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                <button
-                  onClick={() => setIsIntegrationsOpen(!isIntegrationsOpen)}
-                  className="flex items-center gap-1.5 hover:text-[var(--ink)] transition-colors text-left"
-                >
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${isIntegrationsOpen ? '' : '-rotate-90'}`} />
-                  <span>Integrations</span>
-                </button>
-
-                {/* "+" Affordance on hover to jump to sub-action */}
-                <button
-                  onClick={() => alert('Connect External SCADA Telemetry Node')}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--ink)] transition-opacity"
-                  title="Add Integration"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {isIntegrationsOpen && (
-                <div className="flex flex-col gap-0.5 pl-3">
-                  {[
-                    { id: 'overview' as TabId, label: 'AI Assistant', icon: Terminal },
-                    { id: 'ui-gallery' as TabId, label: 'API & Telemetry', icon: Blocks }
-                  ].map((sub) => (
-                    <button
-                      key={sub.label}
-                      onClick={() => handleNavClick(sub.id)}
-                      className="flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-pill)] text-[12px] font-medium text-[var(--text-secondary-accessible)] hover:bg-[var(--surface-muted)]/50 hover:text-[var(--ink)] transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <sub.icon className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                        <span>{sub.label}</span>
-                      </div>
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
