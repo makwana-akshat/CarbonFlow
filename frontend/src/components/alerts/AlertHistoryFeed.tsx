@@ -1,8 +1,12 @@
 import React from 'react';
 import { CheckCircle2, History } from 'lucide-react';
-import { ALERT_HISTORY_DATA } from '../../data/alertsMock';
+import { type AlertHistoryItem } from '../../data/alertsMock';
 
-export const AlertHistoryFeed: React.FC = () => {
+export interface AlertHistoryFeedProps {
+  history: AlertHistoryItem[];
+}
+
+export const AlertHistoryFeed: React.FC<AlertHistoryFeedProps> = ({ history }) => {
   return (
     <div className="w-full bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-card)] p-4 sm:p-5 space-y-3 text-left shadow-2xs">
       <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
@@ -22,7 +26,7 @@ export const AlertHistoryFeed: React.FC = () => {
       </div>
 
       <div className="divide-y divide-[var(--border-subtle)]/50">
-        {ALERT_HISTORY_DATA.map((item) => (
+        {history.map((item) => (
           <div key={item.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">

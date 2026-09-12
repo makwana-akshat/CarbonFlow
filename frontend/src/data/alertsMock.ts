@@ -1,4 +1,4 @@
-// Centralized mock data and TypeScript interfaces for CarbonFlow Alerts & SCADA operational monitoring
+ // Centralized mock data and TypeScript interfaces for CarbonFlow Alerts & SCADA operational monitoring
 
 export type AlertSeverity = 'critical' | 'warning' | 'info';
 export type FacilityStatus = 'normal' | 'warning' | 'critical';

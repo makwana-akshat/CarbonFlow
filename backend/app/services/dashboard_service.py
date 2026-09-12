@@ -5,9 +5,16 @@ from app.repositories.marketplace_repository import MarketplaceRepository
 from app.core.config import settings
 from supabase import create_client
 from datetime import datetime, timedelta
+from app.ai.provider import LLMProvider
+from app.ai.prompts import CARBONFLOW_AI_INSIGHT_PROMPT_V1
+from pydantic import BaseModel
 
 def get_supabase_client():
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+
+class AIInsightResponse(BaseModel):
+    title: str
+    insight: str
 
 class DashboardService:
     def __init__(self):
@@ -15,6 +22,12 @@ class DashboardService:
         self.order_repo = OrderRepository()
         self.market_repo = MarketplaceRepository()
         self.db = get_supabase_client()
+        
+    def _get_internal_user_id(self, clerk_id: str):
+        user = self.user_repo.get_by_clerk_id(clerk_id)
+        if not user:
+            raise Exception("User not found")
+        return user
 
     def get_kpis(self, clerk_user_id: str):
         user = self._get_internal_user_id(clerk_user_id)
@@ -178,15 +191,15 @@ class DashboardService:
     def get_ai_insight(self, clerk_user_id: str):
         user = self._get_internal_user_id(clerk_user_id)
         role = user["role"]
-        user_id = user["id"]
         
-        # Calculate true deterministic insight
+        # Gather context
         active_listings_resp = self.db.table("co2_listings").select("volume_tpa").eq("status", "active").execute()
         active_requests_resp = self.db.table("co2_requests").select("quantity_needed").eq("status", "active").execute()
         
         total_supply = sum([float(x["volume_tpa"]) for x in active_listings_resp.data]) if active_listings_resp and active_listings_resp.data else 0
         total_demand = sum([float(x["quantity_needed"]) for x in active_requests_resp.data]) if active_requests_resp and active_requests_resp.data else 0
         
+        # Base fallback
         if total_supply > total_demand:
             diff = total_supply - total_demand
             title = "Oversupply Detected"
@@ -196,14 +209,22 @@ class DashboardService:
             title = "Shortage Risk Detected"
             msg = f"The network currently has {diff:,.0f} t more active demand than supply. Expect spot premiums."
             
-        # Optional: tailor it slightly by role
-        if role == "buyer":
-            if total_supply > total_demand:
-                msg += " Great time to lock in long-term contracts."
-            else:
-                msg += " Shift flexible requirements to later dates if possible."
+        try:
+            llm = LLMProvider()
+            if not llm.is_available():
+                return {"title": title, "insight": msg}
                 
-        return {
-            "title": title,
-            "insight": msg
-        }
+            context = f"Current Role: {role}\nTotal Active Supply: {total_supply:,.0f} t\nTotal Active Demand: {total_demand:,.0f} t\nDifference: {abs(total_supply - total_demand):,.0f} t"
+            
+            structured_response = llm.generate(
+                system_prompt=CARBONFLOW_AI_INSIGHT_PROMPT_V1,
+                user_prompt=context,
+                response_schema=AIInsightResponse
+            )
+            
+            return {
+                "title": structured_response.title,
+                "insight": structured_response.insight
+            }
+        except Exception:
+            return {"title": title, "insight": msg}

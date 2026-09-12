@@ -1,16 +1,25 @@
-import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
-  filterImpactData,
-  type FilterOptions,
-  type ImpactOverviewMetric,
-  type JourneyStage,
-  type MonthlyUtilizationData,
-  type ApplicationShare,
-  type RegionalImpactItem,
-  type ContributorItem,
-  type RecentActivityItem,
-  type PlatformSummaryStats,
-} from '../data/carbonImpactMock';
+  getImpactOverview,
+  getImpactJourney,
+  getImpactPlatformSummary,
+  getImpactMonthlyUtilization,
+  getImpactApplications,
+  getImpactRegional,
+  getImpactContributors,
+  getImpactRecentActivity
+} from '../services/impactApi';
+import type {
+  ImpactOverviewMetric,
+  JourneyStage,
+  MonthlyUtilizationData,
+  ApplicationShare,
+  RegionalImpactItem,
+  ContributorItem,
+  RecentActivityItem,
+  PlatformSummaryStats,
+} from '../data/carbonImpactMock'; // Keeping the types from the mock file
 
 export type TimeRangeOption = '30d' | '3m' | '6m' | '1y' | 'all';
 
@@ -23,6 +32,8 @@ export interface CarbonImpactContextValue {
   trendMetric: 'utilized' | 'target';
   isExporting: boolean;
   toastMessage: string | null;
+  isLoading: boolean;
+  error: string | null;
 
   // Reactive Computed Data
   overviewMetrics: ImpactOverviewMetric[];
@@ -32,7 +43,7 @@ export interface CarbonImpactContextValue {
   regionalData: RegionalImpactItem[];
   topContributors: ContributorItem[];
   recentActivity: RecentActivityItem[];
-  summaryStats: PlatformSummaryStats;
+  summaryStats: PlatformSummaryStats | null;
 
   // Currently Inspected Entities
   activeStageDetail: JourneyStage | null;
@@ -47,6 +58,7 @@ export interface CarbonImpactContextValue {
   exportReport: (format: 'pdf' | 'csv') => Promise<void>;
   resetFilters: () => void;
   dismissToast: () => void;
+  fetchData: () => Promise<void>;
 }
 
 const CarbonImpactContext = createContext<CarbonImpactContextValue | undefined>(undefined);
@@ -56,6 +68,8 @@ export interface CarbonImpactProviderProps {
 }
 
 export const CarbonImpactProvider: React.FC<CarbonImpactProviderProps> = ({ children }) => {
+  const { getToken } = useAuth();
+  
   const [timeRange, setTimeRange] = useState<TimeRangeOption>('1y');
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
@@ -63,27 +77,76 @@ export const CarbonImpactProvider: React.FC<CarbonImpactProviderProps> = ({ chil
   const [trendMetric, setTrendMetric] = useState<'utilized' | 'target'>('utilized');
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dynamic Filtering: recomputes reactive datasets when filters change
-  const computedData = useMemo(() => {
-    const options: FilterOptions = {
-      timeRange,
-      regionFilter,
-    };
-    return filterImpactData(options);
-  }, [timeRange, regionFilter]);
+  const [overviewMetrics, setOverviewMetrics] = useState<ImpactOverviewMetric[]>([]);
+  const [journeyStages, setJourneyStages] = useState<JourneyStage[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyUtilizationData[]>([]);
+  const [applicationShares, setApplicationShares] = useState<ApplicationShare[]>([]);
+  const [regionalData, setRegionalData] = useState<RegionalImpactItem[]>([]);
+  const [topContributors, setTopContributors] = useState<ContributorItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+  const [summaryStats, setSummaryStats] = useState<PlatformSummaryStats | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = await getToken();
+      
+      const [
+        overviewRes,
+        journeyRes,
+        summaryRes,
+        monthlyRes,
+        appsRes,
+        regionalRes,
+        contribsRes,
+        activityRes
+      ] = await Promise.all([
+        getImpactOverview(token),
+        getImpactJourney(token),
+        getImpactPlatformSummary(token),
+        getImpactMonthlyUtilization(token),
+        getImpactApplications(token),
+        getImpactRegional(token),
+        getImpactContributors(token),
+        getImpactRecentActivity(token)
+      ]);
+
+      setOverviewMetrics(overviewRes || []);
+      setJourneyStages(journeyRes || []);
+      setSummaryStats(summaryRes || null);
+      setMonthlyTrend(monthlyRes || []);
+      setApplicationShares(appsRes || []);
+      setRegionalData(regionalRes || []);
+      setTopContributors(contribsRes || []);
+      setRecentActivity(activityRes || []);
+      
+    } catch (err: any) {
+      console.error('Failed to load Carbon Impact data:', err);
+      setError(err.message || 'Failed to fetch analytics');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [timeRange, regionFilter]); // Refetch if filters change (API currently returns all-time but could be updated)
 
   // Active Stage Detail
   const activeStageDetail = useMemo(() => {
     if (!selectedStageId) return null;
-    return computedData.journeyStages.find((s) => s.id === selectedStageId) || null;
-  }, [selectedStageId, computedData.journeyStages]);
+    return journeyStages.find((s) => s.id === selectedStageId) || null;
+  }, [selectedStageId, journeyStages]);
 
   // Active Region Detail
   const activeRegionDetail = useMemo(() => {
     if (!selectedRegionId) return null;
-    return computedData.regionalData.find((r) => r.id === selectedRegionId) || null;
-  }, [selectedRegionId, computedData.regionalData]);
+    return regionalData.find((r) => r.id === selectedRegionId) || null;
+  }, [selectedRegionId, regionalData]);
 
   // Export Simulation
   const exportReport = async (format: 'pdf' | 'csv') => {
@@ -115,15 +178,17 @@ export const CarbonImpactProvider: React.FC<CarbonImpactProviderProps> = ({ chil
     trendMetric,
     isExporting,
     toastMessage,
+    isLoading,
+    error,
 
-    overviewMetrics: computedData.overviewMetrics,
-    journeyStages: computedData.journeyStages,
-    monthlyTrend: computedData.monthlyTrend,
-    applicationShares: computedData.applicationShares,
-    regionalData: computedData.regionalData,
-    topContributors: computedData.topContributors,
-    recentActivity: computedData.recentActivity,
-    summaryStats: computedData.summaryStats,
+    overviewMetrics,
+    journeyStages,
+    monthlyTrend,
+    applicationShares,
+    regionalData,
+    topContributors,
+    recentActivity,
+    summaryStats,
 
     activeStageDetail,
     activeRegionDetail,
@@ -136,6 +201,7 @@ export const CarbonImpactProvider: React.FC<CarbonImpactProviderProps> = ({ chil
     exportReport,
     resetFilters,
     dismissToast,
+    fetchData,
   };
 
   return (
