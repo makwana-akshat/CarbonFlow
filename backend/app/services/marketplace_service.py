@@ -69,6 +69,33 @@ class MarketplaceService:
         #    request_data["buyer_company_name"] = user.get("organisation", "Unknown Company")
         return self.repo.create_request(request_data)
 
+    def create_inquiry(self, clerk_user_id: str, inquiry_data: dict):
+        user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
+        if not user:
+            raise Exception("User not found in internal DB")
+
+        listing = self.repo.get_listing_by_id(inquiry_data["listing_id"])
+        if not listing:
+            raise ValueError("Target listing not found")
+        if listing.get("status") != "active":
+            raise ValueError("Target listing is no longer active")
+
+        request_payload = {
+            "buyer_id": user["id"],
+            "listing_id": inquiry_data["listing_id"],
+            "volume_needed": inquiry_data["volume_needed"],
+            "delivery_method": inquiry_data["transport_mode"],
+            "required_by_date": inquiry_data["delivery_date"] or None,
+            "application": inquiry_data.get("notes") or "Offtake Inquiry",
+            "title": f"Inquiry for {listing['facility_name']}",
+            "required_grade": listing["co2_grade"],
+            "target_price": listing["price_per_ton"],
+            "min_purity_required": listing["purity_percentage"],
+            "status": "pending"
+        }
+
+        return self.repo.create_request(request_payload)
+
     def update_request(self, clerk_user_id: str, request_id: str, update_data: dict):
         user_id = self._get_internal_user_id(clerk_user_id)
         request = self.get_request_by_id(request_id)

@@ -7,8 +7,7 @@ import { CO2ListingCard } from '../ui/CO2ListingCard';
 import { RequirementCard } from './RequirementCard';
 import { RequestModal } from './RequestModal';
 import { useAuth } from '@clerk/clerk-react';
-import { getListings, getAllRequirements } from '../../services/marketplaceApi';
-import { createOrder } from '../../services/orderApi';
+import { getListings, getAllRequirements, createInquiry } from '../../services/marketplaceApi';
 import type {
   MarketplaceMode,
   MarketplaceFilterState,
@@ -205,22 +204,33 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       if (!token) return;
 
       if (selectedSupplyListing) {
-        // Create an order for a supply listing
+        // Create an inquiry for a supply listing (instead of an order)
         const payload = {
           listing_id: selectedSupplyListing.id,
-          volume: Number(data.volume),
-          transport_mode: data.transportMode
+          volume_needed: Number(data.volume),
+          transport_mode: data.transportMode,
+          delivery_date: data.deliveryDate,
+          notes: data.notes
         };
-        await createOrder(token, payload);
+        await createInquiry(token, payload);
         showToast(`CO₂ offtake request of ${data.volume} t dispatched to ${selectedSupplyListing.companyName}.`);
       } else if (selectedRequirement) {
-        // Supply an offer to a demand requirement (Phase 6 specifies orders usually against listings, but UI allows both)
-        // Note: For now we'll just mock this toast or if backend supports it, do the same.
+        // Supply an offer to a demand requirement
         showToast(`Binding supply offer sent to ${selectedRequirement.buyerCompanyName}.`);
       }
     } catch (e: any) {
       console.error(e);
-      showToast('Error creating order: ' + (e.message || 'Unknown error'));
+      let errorMsg = 'Failed to submit request.';
+      if (e?.message) {
+        if (e.message.includes('422')) errorMsg = 'Validation Error: Please check requested volume and date.';
+        else if (e.message.includes('403')) errorMsg = 'Unauthorized: Only buyers can submit requests.';
+        else if (e.message.includes('404')) errorMsg = 'This CO₂ listing is no longer available.';
+        else if (e.message.includes('409')) errorMsg = 'This listing is no longer active.';
+        else if (e.message.includes('401')) errorMsg = 'Authentication Failed: Please sign in again.';
+        else if (e.message.includes('500')) errorMsg = 'Unable to submit the request right now. Please try again.';
+        else errorMsg = `Error: ${e.message}`;
+      }
+      showToast(errorMsg);
     }
   };
 

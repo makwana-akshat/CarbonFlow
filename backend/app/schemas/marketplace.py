@@ -57,6 +57,13 @@ class CO2RequestBase(BaseModel):
 class CO2RequestCreate(CO2RequestBase):
     pass
 
+class CO2InquiryCreate(BaseModel):
+    listing_id: str
+    volume_needed: float = Field(..., gt=0)
+    transport_mode: str
+    delivery_date: str
+    notes: Optional[str] = None
+
 class CO2RequestUpdate(BaseModel):
     title: Optional[str] = None
     application: Optional[str] = None
