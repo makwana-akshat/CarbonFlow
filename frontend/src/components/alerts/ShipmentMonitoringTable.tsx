@@ -1,12 +1,14 @@
 import React from 'react';
 import { Truck, Train, GitCommit } from 'lucide-react';
-import { SHIPMENT_MONITORING_DATA, type ShipmentMonitoringItem } from '../../data/alertsMock';
+import { type ShipmentMonitoringItem } from '../../data/alertsMock';
 
 export interface ShipmentMonitoringTableProps {
+  shipments: ShipmentMonitoringItem[];
   onSelectShipment?: (shipment: ShipmentMonitoringItem) => void;
 }
 
 export const ShipmentMonitoringTable: React.FC<ShipmentMonitoringTableProps> = ({
+  shipments,
   onSelectShipment,
 }) => {
   const getModeIcon = (mode: string) => {
@@ -50,7 +52,7 @@ export const ShipmentMonitoringTable: React.FC<ShipmentMonitoringTableProps> = (
           </p>
         </div>
         <span className="text-[11px] font-mono text-[var(--text-secondary)]">
-          {SHIPMENT_MONITORING_DATA.length} Active Convoys
+          {shipments.length} Active Convoys
         </span>
       </div>
 
@@ -67,7 +69,7 @@ export const ShipmentMonitoringTable: React.FC<ShipmentMonitoringTableProps> = (
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)]/60">
-            {SHIPMENT_MONITORING_DATA.map((shp) => (
+            {shipments.map((shp) => (
               <tr
                 key={shp.id}
                 onClick={() => onSelectShipment?.(shp)}

@@ -6,7 +6,8 @@ import {
   ExternalLink, 
   ArrowRight,
   Building,
-  MapPin
+  MapPin,
+  CheckCircle2
 } from 'lucide-react';
 import type { ActiveAlertItem } from '../../data/alertsMock';
 
@@ -15,6 +16,7 @@ export interface AlertDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onAcknowledge: (alertId: string) => void;
+  onResolve: (alertId: string, note: string) => void;
   onInvestigate: (alert: ActiveAlertItem) => void;
   onOpenFacility: (sourceName: string) => void;
 }
@@ -24,6 +26,7 @@ export const AlertDetailDrawer: React.FC<AlertDetailDrawerProps> = ({
   isOpen,
   onClose,
   onAcknowledge,
+  onResolve,
   onInvestigate,
   onOpenFacility,
 }) => {
@@ -173,14 +176,25 @@ export const AlertDetailDrawer: React.FC<AlertDetailDrawerProps> = ({
                 <span>{alert.acknowledged ? 'Acknowledged' : 'Acknowledge'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => onInvestigate(alert)}
-                className="w-full py-2 px-3 rounded-[var(--radius-md)] bg-[var(--ink)] text-white text-xs font-semibold hover:bg-[var(--accent-primary)] transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-              >
-                <span>Investigate</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              {alert.acknowledged ? (
+                <button
+                  type="button"
+                  onClick={() => onResolve(alert.id, "Resolved via operator dashboard")}
+                  className="w-full py-2 px-3 rounded-[var(--radius-md)] bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Resolve</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onInvestigate(alert)}
+                  className="w-full py-2 px-3 rounded-[var(--radius-md)] bg-[var(--ink)] text-white text-xs font-semibold hover:bg-[var(--accent-primary)] transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <span>Investigate</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <button

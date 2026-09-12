@@ -1,12 +1,14 @@
 import React from 'react';
 import { Factory } from 'lucide-react';
-import { FACILITY_MONITORING_DATA, type FacilityMonitoringItem } from '../../data/alertsMock';
+import { type FacilityMonitoringItem } from '../../data/alertsMock';
 
 export interface FacilityMonitoringTableProps {
+  facilities: FacilityMonitoringItem[];
   onSelectFacility?: (facility: FacilityMonitoringItem) => void;
 }
 
 export const FacilityMonitoringTable: React.FC<FacilityMonitoringTableProps> = ({
+  facilities,
   onSelectFacility,
 }) => {
   return (
@@ -21,7 +23,7 @@ export const FacilityMonitoringTable: React.FC<FacilityMonitoringTableProps> = (
           </p>
         </div>
         <span className="text-[11px] font-mono text-[var(--text-secondary)]">
-          {FACILITY_MONITORING_DATA.length} Facilities Monitored
+          {facilities.length} Facilities Monitored
         </span>
       </div>
 
@@ -38,7 +40,7 @@ export const FacilityMonitoringTable: React.FC<FacilityMonitoringTableProps> = (
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)]/60">
-            {FACILITY_MONITORING_DATA.map((fac) => {
+            {facilities.map((fac) => {
 
               return (
                 <tr
