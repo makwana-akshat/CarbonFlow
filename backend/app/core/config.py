@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     
+    # LLM Settings
+    LLM_API_KEY: str | None = None
+    LLM_MODEL: str | None = "gpt-4o-mini"
+    
     class Config:
         case_sensitive = True
         env_file = ".env"

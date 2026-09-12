@@ -14,7 +14,23 @@ import { CarbonJourneyStageModal } from './CarbonJourneyStageModal';
 import { CheckCircle2, X } from 'lucide-react';
 
 const CarbonImpactContent: React.FC = () => {
-  const { toastMessage, dismissToast } = useCarbonImpact();
+  const { toastMessage, dismissToast, isLoading, error } = useCarbonImpact();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-96 text-red-500">
+        Error loading impact data: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 relative">
