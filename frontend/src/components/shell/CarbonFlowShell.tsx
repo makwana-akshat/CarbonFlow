@@ -359,8 +359,23 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
             <div className="flex items-center bg-[var(--surface-elevated)] p-1 rounded-[var(--radius-pill)] border border-[var(--border-subtle)]">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setUserRole('buyer');
+                  try {
+                    const token = await getToken();
+                    if (token) {
+                      await fetch('http://localhost:8000/api/v1/users/me', {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ role: 'buyer' })
+                      });
+                    }
+                  } catch (e) {
+                    console.error('Failed to sync role to db', e);
+                  }
                   showToast('Switched to Buyer Mode');
                 }}
                 className={`px-3 py-1 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors ${
@@ -373,8 +388,23 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setUserRole('supplier');
+                  try {
+                    const token = await getToken();
+                    if (token) {
+                      await fetch('http://localhost:8000/api/v1/users/me', {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ role: 'supplier' })
+                      });
+                    }
+                  } catch (e) {
+                    console.error('Failed to sync role to db', e);
+                  }
                   showToast('Switched to Supplier Mode');
                 }}
                 className={`px-3 py-1 rounded-[var(--radius-pill)] text-[12px] font-medium transition-colors ${
