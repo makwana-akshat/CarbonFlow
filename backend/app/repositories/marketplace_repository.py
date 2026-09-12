@@ -129,7 +129,7 @@ class MarketplaceRepository:
         page: int = 1,
         limit: int = 20
     ) -> dict:
-        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)", count="exact").eq("status", "active")
+        query = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role, company_name)", count="exact").eq("status", "active").is_("listing_id", "null")
         
         if min_purity is not None:
             query = query.gte("min_purity_required", min_purity)
@@ -173,6 +173,26 @@ class MarketplaceRepository:
     def get_requests_by_buyer(self, buyer_id: str) -> List[dict]:
         response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)").eq("buyer_id", buyer_id).order("created_at", desc=True).execute()
         return response.data
+
+    def get_supplier_inquiries(self, supplier_id: str) -> List[dict]:
+        # 1. Get all listing IDs for this supplier
+        listings_res = self.db.table("co2_listings").select("id, facility_name").eq("supplier_id", supplier_id).execute()
+        if not listings_res.data:
+            return []
+            
+        listing_ids = [l["id"] for l in listings_res.data]
+        listing_map = {l["id"]: l["facility_name"] for l in listings_res.data}
+        
+        # 2. Get all requests targeting those listings
+        # We join users to get the buyer's details
+        inquiries_res = self.db.table("co2_requests").select("*, users!buyer_id(first_name, last_name, company_name, email)").in_("listing_id", listing_ids).order("created_at", desc=True).execute()
+        
+        results = []
+        for inq in inquiries_res.data:
+            inq["listing_name"] = listing_map.get(inq.get("listing_id"))
+            results.append(inq)
+            
+        return results
 
     def get_request_by_id(self, request_id: str) -> Optional[dict]:
         response = self.db.table("co2_requests").select("*, users!inner(first_name, last_name, email, role)").eq("id", request_id).execute()

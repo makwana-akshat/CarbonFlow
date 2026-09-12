@@ -84,3 +84,61 @@ class MarketplaceService:
             raise Exception("Not authorized to delete this requirement")
             
         self.repo.delete_request(request_id)
+
+    def get_supplier_inquiries(self, clerk_user_id: str):
+        user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
+        if user["role"] != "supplier":
+            raise PermissionError("Only suppliers can access inquiries")
+        return self.repo.get_supplier_inquiries(user["id"])
+
+    def accept_inquiry(self, clerk_user_id: str, request_id: str):
+        user = self.user_repo.get_user_by_clerk_id(clerk_user_id)
+        
+        # Fetch the inquiry
+        inquiry = self.repo.get_request_by_id(request_id)
+        if not inquiry:
+            raise ValueError("Inquiry not found")
+            
+        if not inquiry.get("listing_id"):
+            raise ValueError("This is a general demand requirement, not a direct inquiry")
+            
+        if inquiry.get("status") in ["Accepted", "cancelled"]:
+            raise ValueError(f"Cannot accept an inquiry that is already {inquiry.get('status')}")
+            
+        # Verify supplier owns the listing
+        listing = self.repo.get_listing_by_id(inquiry["listing_id"])
+        if not listing:
+            raise ValueError("Target listing no longer exists")
+        if listing["supplier_id"] != user["id"]:
+            raise PermissionError("You do not own the target listing for this inquiry")
+            
+        # Create Order from Inquiry
+        from app.services.order_service import OrderService
+        order_svc = OrderService()
+        
+        volume = inquiry.get("volume_needed", 0)
+        price_per_ton = inquiry.get("target_price", listing.get("price_per_ton", 0))
+        
+        safe_order = {
+            "buyer_id": inquiry["buyer_id"],
+            "supplier_id": user["id"],
+            "listing_id": listing["id"],
+            "volume": volume,
+            "total_value": float(volume) * float(price_per_ton),
+            "transport_mode": inquiry.get("delivery_method") or listing.get("transport_modes", ["Road"])[0],
+            "status": "confirmed"
+        }
+        
+        order = order_svc.repo.create_order(safe_order)
+        
+        # Create Contract from Order
+        from app.services.contract_service import ContractService
+        from app.schemas.contract import ContractCreate
+        contract_svc = ContractService()
+        
+        contract = contract_svc.create_contract(user["id"], ContractCreate(order_id=order["id"]))
+        
+        # Mark inquiry as Accepted
+        self.repo.update_request(request_id, {"status": "Accepted"})
+        
+        return contract

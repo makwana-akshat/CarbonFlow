@@ -22,8 +22,10 @@ import { AlertsPage } from '../alerts/AlertsPage';
 import { AuditContractsPage } from '../contracts/AuditContractsPage';
 import { AssistantWidget } from '../assistant/AssistantWidget';
 import { useAuth } from '@clerk/clerk-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrders } from '../../services/orderApi';
 import { getRecommendations } from '../../services/recommendationsApi';
+import { getSupplierInquiries, acceptInquiry } from '../../services/marketplaceApi';
 import { useAppStore } from '../../store/useAppStore';
 
 export interface CarbonFlowShellProps {
@@ -56,7 +58,45 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
+
+  // Fetch Supplier Inquiries
+  const { data: supplierInquiries, isLoading: isLoadingInquiries } = useQuery({
+    queryKey: ['supplier-inquiries'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token || userRole !== 'supplier') return [];
+      return getSupplierInquiries(token);
+    },
+    enabled: userRole === 'supplier' && location.pathname === '/app/buyer-requests',
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return acceptInquiry(token, id);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-inquiries'] });
+      showToast('Inquiry accepted! Contract drafted.');
+      if (data?.contract?.id) {
+        navigate(`/app/audit-contracts`);
+      }
+    },
+    onError: (error) => {
+      showToast('Failed to accept inquiry.');
+      console.error(error);
+    }
+  });
+
+  const [inquiriesList, setInquiriesList] = useState<any[]>([]);
+  useEffect(() => {
+    if (supplierInquiries) {
+      setInquiriesList(supplierInquiries);
+    }
+  }, [supplierInquiries]);
+  
 
   // Determine current active subpath
   const currentPath = location.pathname;
@@ -482,38 +522,57 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                     </p>
                   </div>
                 </div>
-                <div className="divide-y divide-[var(--border-subtle)]">
-                  {[
-                    { id: 'INQ-402', buyer: 'Tata Steel Cleantech', stream: 'AeroCapture DAC Unit IV', volume: '5,000 t', price: '₹5,800/t', status: 'Pending Offer', date: '2 hours ago' },
-                    { id: 'INQ-398', buyer: 'Gujarat Heavy Chem', stream: 'AeroCapture Biogenic Hub 2', volume: '3,200 t', price: '₹4,600/t', status: 'In Review', date: 'Yesterday' },
-                    { id: 'INQ-384', buyer: 'Adani Solar Manufacturing', stream: 'Surat Flue Scrubbing Facility #1', volume: '12,000 t', price: '₹3,900/t', status: 'Scheduled Call', date: '3 days ago' },
-                  ].map((inq) => (
-                    <div key={inq.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-[14px] text-[var(--ink)]">{inq.buyer}</span>
-                          <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded">
-                            {inq.id}
-                          </span>
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
-                            {inq.status}
-                          </span>
+                
+                {isLoadingInquiries ? (
+                  <div className="py-12 flex justify-center text-[var(--text-secondary)]">Loading buyer requests...</div>
+                ) : inquiriesList.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <Inbox className="w-8 h-8 text-[var(--text-secondary)] mb-3 opacity-50" />
+                    <h3 className="text-[15px] font-semibold text-[var(--ink)] mb-1">No incoming buyer requests yet</h3>
+                    <p className="text-[13px] text-[var(--text-secondary-accessible)]">When buyers inquire about your active listings, they will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[var(--border-subtle)]">
+                    {inquiriesList.map((inq: any) => (
+                      <div key={inq.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[14px] text-[var(--ink)]">{inq.users?.company_name || 'Unknown Buyer'}</span>
+                            <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded">
+                              INQ-{inq.id.split('-')[0].toUpperCase()}
+                            </span>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] ${inq.status === 'Accepted' ? 'bg-[var(--status-success)]/10 text-[var(--status-success)]' : 'bg-[#F5A623]/10 text-[var(--status-warning)]'}`}>
+                              {inq.status || 'Pending Offer'}
+                            </span>
+                          </div>
+                          <div className="text-[12px] text-[var(--text-secondary-accessible)] flex flex-wrap items-center gap-1.5">
+                            <span>Target Stream: <strong className="text-[var(--ink)] font-semibold">{inq.listing_name || 'Unknown Stream'}</strong></span>
+                            <span className="text-[var(--border-subtle)]">•</span>
+                            <span>Volume: <strong className="text-[var(--ink)] font-semibold">{inq.volume_needed?.toLocaleString()} t</strong></span>
+                            <span className="text-[var(--border-subtle)]">•</span>
+                            <span>Offered: <strong className="text-[var(--accent-primary)] font-semibold">₹{inq.target_price?.toLocaleString()}/t</strong></span>
+                            <span className="text-[var(--border-subtle)]">•</span>
+                            <span>{new Date(inq.created_at).toLocaleDateString()}</span>
+                          </div>
                         </div>
-                        <div className="text-[12px] text-[var(--text-secondary-accessible)]">
-                          Target Stream: <strong className="text-[var(--ink)]">{inq.stream}</strong> · Volume: {inq.volume} · Offered: {inq.price} · {inq.date}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={() => showToast(`Opening chat with ${inq.users?.company_name || 'Buyer'}`)}>
+                            Contact Buyer
+                          </Button>
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            className="flex-1 sm:flex-none" 
+                            disabled={acceptMutation.isPending || inq.status === 'Accepted'} 
+                            onClick={() => acceptMutation.mutate(inq.id)}
+                          >
+                            {acceptMutation.isPending ? 'Drafting...' : inq.status === 'Accepted' ? 'Contract Drafted' : 'Accept & Draft Contract'}
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => showToast(`Opening chat with ${inq.buyer}`)}>
-                          Contact Buyer
-                        </Button>
-                        <Button variant="primary" size="sm" onClick={() => showToast(`Offtake draft generated for ${inq.id}`)}>
-                          Accept & Draft Contract
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -22,7 +22,9 @@ import {
   X,
   Map
 } from 'lucide-react';
-import { useClerk } from '@clerk/clerk-react';
+import { useClerk, useAuth } from '@clerk/clerk-react';
+import { useQuery } from '@tanstack/react-query';
+import { getSupplierInquiries } from '../../services/marketplaceApi';
 import type { UserRole } from '../../types/dashboard';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -45,6 +47,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useClerk();
+  const { getToken } = useAuth();
 
   const {
     userRole,
@@ -121,6 +124,16 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     },
   }[userRole];
 
+  const { data: supplierInquiries } = useQuery({
+    queryKey: ['supplier-inquiries'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token || userRole !== 'supplier') return [];
+      return getSupplierInquiries(token);
+    },
+    enabled: userRole === 'supplier',
+  });
+
   // Role-Aware Main Navigation Items with strictly unique paths
   const mainNavItems: NavItemConfig[] = userRole === 'buyer' ? [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -136,7 +149,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     { path: '/app/my-supply', label: 'My CO₂ Supply', icon: Factory },
     { path: '/app/marketplace', label: 'Marketplace', icon: Store, badge: 'Live' },
     { path: '/app/maps', label: 'Maps', icon: Map },
-    { path: '/app/buyer-requests', label: 'Buyer Requests', icon: Users, badge: 6 },
+    { path: '/app/buyer-requests', label: 'Buyer Requests', icon: Users, badge: supplierInquiries ? supplierInquiries.length : 0 },
     { path: '/app/recommendations', label: 'AI Recommendations', icon: Sparkles, badge: '94%' },
     { path: '/app/orders', label: 'Orders', icon: Inbox, badge: 4 },
     { path: '/app/logistics', label: 'Logistics', icon: Truck },
