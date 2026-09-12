@@ -4,8 +4,7 @@ from app.repositories.marketplace_repository import MarketplaceRepository
 
 from app.core.config import settings
 from supabase import create_client
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 
 def get_supabase_client():
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
@@ -92,7 +91,10 @@ class DashboardService:
         # Create a bucket for each of the last 12 months
         months = []
         for i in range(11, -1, -1):
-            dt = today - relativedelta(months=i)
+            month_offset = today.month - i - 1
+            y = today.year + (month_offset // 12)
+            m = (month_offset % 12) + 1
+            dt = datetime(year=y, month=m, day=1)
             months.append({
                 "date_str": dt.strftime("%Y-%m"),
                 "label": dt.strftime("%b"),
