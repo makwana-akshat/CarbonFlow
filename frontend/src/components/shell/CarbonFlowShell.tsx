@@ -109,12 +109,11 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
           const res = await getOrders(token);
           if (res && res.items && res.items.length > 0) {
             const mapped = res.items.map((o: any) => ({
+              rawId: o.id,
               id: `ORD-${o.id.substring(0, 4).toUpperCase()}`,
-              supplier: o.supplier
-                ? `${o.supplier.first_name} ${o.supplier.last_name || ''}`.trim()
-                : o.buyer
-                ? `${o.buyer.first_name} ${o.buyer.last_name || ''}`.trim()
-                : 'Unknown',
+              counterpartyName: (userRole === 'buyer' ? o.supplier : o.buyer)
+                ? `${(userRole === 'buyer' ? o.supplier : o.buyer).first_name} ${(userRole === 'buyer' ? o.supplier : o.buyer).last_name || ''}`.trim()
+                : 'Unknown Company',
               volume: `${o.volume.toLocaleString()} t`,
               mode: o.transport_mode,
               status: o.status,
@@ -600,34 +599,42 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                   </div>
                 </div>
                 <div className="divide-y divide-[var(--border-subtle)]">
-                  {(activeOrders.length > 0 ? activeOrders : [
-                    { id: 'ORD-8921', supplier: 'AeroCapture DAC Unit IV', volume: '12,500 t', mode: 'Pipeline-ready', status: 'in-transit', eta: 'Tomorrow, 08:00 AM' },
-                    { id: 'ORD-8904', supplier: 'Deccan Biofuels Hub', volume: '5,200 t', mode: 'Cryogenic Truck', status: 'loading', eta: 'Sep 15, 2026' },
-                    { id: 'ORD-8872', supplier: 'Gujarat Alkalis Hazira', volume: '8,400 t', mode: 'ISO Rail Tanker', status: 'delivered', eta: 'Delivered Sep 10' },
-                  ]).map((order) => (
-                    <div key={order.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-[14px] text-[var(--ink)]">{order.id}</span>
-                          <span className="text-[var(--text-secondary)]">•</span>
-                          <span className="font-medium text-[14px] text-[var(--text-primary)]">{order.supplier}</span>
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#34C77B]/10 text-[var(--status-success)]">
-                            {order.status}
-                          </span>
+                  {activeOrders.length > 0 ? (
+                    activeOrders.map((order) => (
+                      <div key={order.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[14px] text-[var(--ink)]">{order.id}</span>
+                            <span className="text-[var(--text-secondary)]">•</span>
+                            <span className="font-medium text-[14px] text-[var(--text-primary)]">{order.counterpartyName}</span>
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#34C77B]/10 text-[var(--status-success)]">
+                              {order.status}
+                            </span>
+                          </div>
+                          <div className="text-[12px] text-[var(--text-secondary-accessible)]">
+                            Volume: <strong>{order.volume}</strong> | Method: {order.mode} | Expected: {order.eta}
+                          </div>
                         </div>
-                        <div className="text-[12px] text-[var(--text-secondary-accessible)]">
-                          Volume: <strong>{order.volume}</strong> | Method: {order.mode} | Expected: {order.eta}
-                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => navigate(`/app/logistics?orderId=${order.rawId}`)}
+                        >
+                          Track Manifest
+                        </Button>
                       </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => navigate('/app/logistics')}
-                      >
-                        Track Manifest
-                      </Button>
+                    ))
+                  ) : (
+                    <div className="py-12 flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-[var(--surface-sunken)] flex items-center justify-center mb-4">
+                        <Inbox className="w-6 h-6 text-[var(--text-secondary)]" />
+                      </div>
+                      <h3 className="text-[16px] font-semibold text-[var(--ink)]">No Active Orders</h3>
+                      <p className="text-[14px] text-[var(--text-secondary)] mt-1 max-w-[300px]">
+                        You don't have any active offtake orders or manifests to track right now.
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}

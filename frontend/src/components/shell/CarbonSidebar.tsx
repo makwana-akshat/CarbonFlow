@@ -24,7 +24,8 @@ import {
 } from 'lucide-react';
 import { useClerk, useAuth } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
-import { getSupplierInquiries } from '../../services/marketplaceApi';
+import { getSupplierInquiries } from '../../services/api';
+import { getOrders } from '../../services/orderApi';
 import type { UserRole } from '../../types/dashboard';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -134,6 +135,20 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     enabled: userRole === 'supplier',
   });
 
+  // Fetch active orders for badge count
+  const { data: activeOrdersData } = useQuery({
+    queryKey: ['activeOrdersCount'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return [];
+      const res = await getOrders(token);
+      return res.items || [];
+    }
+  });
+  const activeOrdersCount = activeOrdersData 
+    ? activeOrdersData.filter((o: any) => o.status !== 'cancelled' && o.status !== 'delivered').length 
+    : 0;
+
   // Role-Aware Main Navigation Items with strictly unique paths
   const mainNavItems: NavItemConfig[] = userRole === 'buyer' ? [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -142,7 +157,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     { path: '/app/requirements', label: 'My Requirements', icon: FileText },
     { path: '/app/recommendations', label: 'AI Recommendations', icon: Sparkles, badge: '98%' },
     { path: '/app/procurement-plans', label: 'Procurement Plans', icon: FolderKanban },
-    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: 3 },
+    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined },
     { path: '/app/logistics', label: 'Logistics', icon: Truck },
   ] : [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -151,7 +166,7 @@ export const CarbonSidebar: React.FC<CarbonSidebarProps> = ({
     { path: '/app/maps', label: 'Maps', icon: Map },
     { path: '/app/buyer-requests', label: 'Buyer Requests', icon: Users, badge: supplierInquiries ? supplierInquiries.length : 0 },
     { path: '/app/recommendations', label: 'AI Recommendations', icon: Sparkles, badge: '94%' },
-    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: 4 },
+    { path: '/app/orders', label: 'Orders', icon: Inbox, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined },
     { path: '/app/logistics', label: 'Logistics', icon: Truck },
   ];
 
