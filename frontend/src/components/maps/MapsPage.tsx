@@ -30,6 +30,7 @@ import {
   getRoutes,
   getRegions,
   getCarbonFlows,
+  fetchRegions,
 } from '../../services/mapService';
 
 interface MapsPageProps {
@@ -74,17 +75,19 @@ export const MapsPage: React.FC<MapsPageProps> = ({
   const [rawFacilities, setRawFacilities] = useState<FacilityNode[]>([]);
   const [rawRoutes, setRawRoutes] = useState<RouteData[]>([]);
   const [rawFlows, setRawFlows] = useState<CarbonFlowEdge[]>([]);
+  const [rawRegions, setRawRegions] = useState<RegionData[]>([]);
 
   useEffect(() => {
     let active = true;
     const loadData = async () => {
       const token = await getToken();
-      const [supps, byrs, facs, rts, flws] = await Promise.all([
+      const [supps, byrs, facs, rts, flws, regs] = await Promise.all([
         fetchSuppliers(token),
         fetchBuyers(token),
         fetchFacilities(token),
         fetchRoutes(token),
-        fetchCarbonFlows(token)
+        fetchCarbonFlows(token),
+        fetchRegions(token)
       ]);
       if (active) {
         setRawSuppliers(supps);
@@ -92,6 +95,7 @@ export const MapsPage: React.FC<MapsPageProps> = ({
         setRawFacilities(facs);
         setRawRoutes(rts);
         setRawFlows(flws);
+        setRawRegions(regs);
       }
     };
     loadData();
@@ -132,7 +136,7 @@ export const MapsPage: React.FC<MapsPageProps> = ({
   const filteredBuyers = useMemo(() => getBuyers(rawBuyers, filters, searchQuery), [rawBuyers, filters, searchQuery]);
   const filteredFacilities = useMemo(() => getFacilities(rawFacilities, filters, searchQuery), [rawFacilities, filters, searchQuery]);
   const filteredRoutes = useMemo(() => getRoutes(rawRoutes, filters, searchQuery), [rawRoutes, filters, searchQuery]);
-  const filteredRegions = useMemo(() => getRegions(filters), [filters]);
+  const filteredRegions = useMemo(() => getRegions(rawRegions, filters), [rawRegions, filters]);
   const carbonFlows = useMemo(() => getCarbonFlows(rawFlows), [rawFlows]);
 
   return (

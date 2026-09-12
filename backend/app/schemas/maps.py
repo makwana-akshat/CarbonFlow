@@ -66,3 +66,21 @@ class CarbonFlowEdge(BaseModel):
     active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class RegionSupply(BaseModel):
+    totalTonnes: int
+    activeSuppliers: int
+
+class RegionDemand(BaseModel):
+    totalTonnes: int
+    activeBuyers: int
+
+class RegionData(BaseModel):
+    id: str
+    name: str
+    coords: GeoPoint
+    avgPrice: float
+    supply: RegionSupply
+    demand: RegionDemand
+
+    model_config = ConfigDict(from_attributes=True)

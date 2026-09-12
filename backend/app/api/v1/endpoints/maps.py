@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from app.api.dependencies import get_current_user_id
 from app.services.map_service import MapService
-from app.schemas.maps import SupplierNode, BuyerNode, FacilityNode, RouteData, CarbonFlowEdge
+from app.schemas.maps import SupplierNode, BuyerNode, FacilityNode, RouteData, CarbonFlowEdge, RegionData
 
 router = APIRouter()
 map_service = MapService()
@@ -26,3 +26,7 @@ def get_routes(clerk_user_id: str = Depends(get_current_user_id)):
 @router.get("/carbon-flows", response_model=List[CarbonFlowEdge])
 def get_carbon_flows(clerk_user_id: str = Depends(get_current_user_id)):
     return map_service.get_carbon_flows()
+
+@router.get("/regions", response_model=List[RegionData])
+def get_regions(clerk_user_id: str = Depends(get_current_user_id)):
+    return map_service.get_regions()

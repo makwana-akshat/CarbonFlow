@@ -14,7 +14,6 @@ import type {
   MapFilterState,
   GeoPoint,
 } from '../types/maps';
-import { REGIONS } from '../data/mapsMockData';
 
 // ─── API Fetchers ─────────────────────────────────────────────────────────────
 
@@ -57,6 +56,15 @@ export async function fetchRoutes(token: string | null): Promise<RouteData[]> {
 export async function fetchCarbonFlows(token: string | null): Promise<CarbonFlowEdge[]> {
   try {
     const data = await fetchWithAuth('/maps/carbon-flows', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRegions(token: string | null): Promise<RegionData[]> {
+  try {
+    const data = await fetchWithAuth('/maps/regions', token);
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
@@ -143,9 +151,9 @@ export function getRoutes(routes: RouteData[], filters: MapFilterState, searchQu
 
 // ─── Region Queries ───────────────────────────────────────────────────────────
 
-export function getRegions(filters: MapFilterState): RegionData[] {
-  if (!filters.region) return REGIONS;
-  return REGIONS.filter((r) => r.name.toLowerCase().includes(filters.region.toLowerCase()));
+export function getRegions(regions: RegionData[], filters: MapFilterState): RegionData[] {
+  if (!filters.region) return regions;
+  return regions.filter((r) => r.name.toLowerCase().includes(filters.region.toLowerCase()));
 }
 
 // ─── Carbon Flow Queries ──────────────────────────────────────────────────────
@@ -168,6 +176,7 @@ export function searchEntities(
   suppliers: SupplierNode[],
   buyers: BuyerNode[],
   facilities: FacilityNode[],
+  regions: RegionData[],
   query: string
 ): SearchResult[] {
   if (!query.trim()) return [];
@@ -189,7 +198,7 @@ export function searchEntities(
       results.push({ id: f.id, label: f.name, subtitle: f.location, type: 'facility', coords: f.coords });
     }
   }
-  for (const r of REGIONS) {
+  for (const r of regions) {
     if (r.name.toLowerCase().includes(q)) {
       results.push({ id: r.id, label: r.name, subtitle: `${r.supply.activeSuppliers} suppliers`, type: 'region', coords: r.coords });
     }

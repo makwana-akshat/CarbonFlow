@@ -1,66 +1,57 @@
+import uuid
 from app.core.config import settings
 from supabase import create_client, Client
-from app.schemas.maps import SupplierNode, BuyerNode, FacilityNode, RouteData, CarbonFlowEdge, GeoPoint
+from app.schemas.maps import SupplierNode, BuyerNode, FacilityNode, RouteData, CarbonFlowEdge, GeoPoint, RegionData, RegionSupply, RegionDemand
 
-def get_coords_from_name(name: str):
-    name_lower = (name or "").lower()
-    if 'ahmedabad' in name_lower: return GeoPoint(lat=23.0225, lng=72.5714)
-    if 'surat' in name_lower: return GeoPoint(lat=21.1702, lng=72.8311)
-    if 'jamnagar' in name_lower: return GeoPoint(lat=22.4707, lng=70.0700)
-    if 'hazira' in name_lower: return GeoPoint(lat=21.1100, lng=72.6500)
-    if 'vadodara' in name_lower: return GeoPoint(lat=22.3072, lng=73.1812)
-    if 'mundra' in name_lower: return GeoPoint(lat=22.8400, lng=69.7200)
-    if 'mumbai' in name_lower: return GeoPoint(lat=19.0760, lng=72.8777)
-    if 'pune' in name_lower: return GeoPoint(lat=18.5204, lng=73.8567)
-    if 'chennai' in name_lower: return GeoPoint(lat=13.0827, lng=80.2707)
-    return GeoPoint(lat=22.0, lng=72.0)
+class MapService:
+    def __init__(self):
+        self.db: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 class MapService:
     def __init__(self):
         self.db: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
     def get_suppliers(self):
-        res = self.db.table("co2_listings").select("*").execute()
+        res = self.db.table("co2_listings").select("*, users!supplier_id(company_name)").eq("status", "active").execute()
         suppliers = []
         for l in res.data:
+            if l.get('latitude') is None or l.get('longitude') is None:
+                continue
+                
             facility_name = l.get('facility_name', 'Unknown Facility')
-            coords = get_coords_from_name(facility_name)
+            company = l.get('users', {}).get('company_name') if l.get('users') else facility_name
             
             suppliers.append(SupplierNode(
                 id=l['id'],
-                coords=coords,
-                name=facility_name,
-                location=facility_name,
+                coords=GeoPoint(lat=l['latitude'], lng=l['longitude']),
+                name=company or facility_name,
+                location=l.get('location', facility_name),
                 industry="Industrial",
-                facilityType="Point-Source",
+                facilityType=l.get('source_type', "Point-Source"),
                 availableTonnes=l.get('volume_tpa', 0),
                 purity=l.get('purity_percentage', 99.0),
                 pricePerTon=l.get('price_per_ton', 4000),
-                verified=True
+                verified=l.get('is_verified', True)
             ))
         return suppliers
 
     def get_buyers(self):
-        res = self.db.table("co2_requests").select("*").execute()
+        res = self.db.table("co2_requests").select("*, users!buyer_id(company_name)").eq("status", "active").is_("listing_id", "null").execute()
         buyers = []
-        for i, r in enumerate(res.data):
-            # Fallback coordinate assignment based on index if no location text exists
-            coords_list = [
-                GeoPoint(lat=23.07, lng=72.61), # Ahmedabad area
-                GeoPoint(lat=21.21, lng=72.87), # Surat area
-                GeoPoint(lat=22.44, lng=70.04), # Jamnagar area
-                GeoPoint(lat=19.04, lng=72.84)  # Mumbai area
-            ]
-            coords = coords_list[i % len(coords_list)]
+        for r in res.data:
+            if r.get('latitude') is None or r.get('longitude') is None:
+                continue
+                
+            company = r.get('users', {}).get('company_name') if r.get('users') else "CarbonFlow Buyer"
             
             buyers.append(BuyerNode(
                 id=r['id'],
-                coords=coords,
-                name=f"Buyer {r['id'][:8]}",
-                organisation="CarbonFlow Buyer",
-                location="Industrial Zone",
-                application=r.get('required_grade', 'Industrial'),
-                minPurity=95.0,
+                coords=GeoPoint(lat=r['latitude'], lng=r['longitude']),
+                name=r.get('title', company),
+                organisation=company,
+                location=r.get('location', "Industrial Zone"),
+                application=r.get('application', r.get('required_grade', 'Industrial')),
+                minPurity=r.get('min_purity_required', 95.0),
                 verified=True
             ))
         return buyers
@@ -100,9 +91,15 @@ class MapService:
         return routes
 
     def get_carbon_flows(self):
-        res = self.db.table("orders").select("*").eq("status", "Continuous Flow").execute()
+        res = self.db.table("orders").select("*, routes!left(from_lat, from_lng, to_lat, to_lng)").in_("status", ["Continuous Flow", "in-transit"]).execute()
         flows = []
         for o in res.data:
+            if o.get("routes") and len(o["routes"]) > 0:
+                route = o["routes"][0]
+                if route.get("from_lat") and route.get("to_lat"):
+                    # the frontend currently does not use coords directly from CarbonFlowEdge, but rather links fromId and toId
+                    pass
+                    
             flows.append(CarbonFlowEdge(
                 id=o['id'],
                 fromId=o['supplier_id'],
@@ -111,3 +108,61 @@ class MapService:
                 active=True
             ))
         return flows
+
+    def get_regions(self):
+        # Dynamically calculate regional aggregation
+        suppliers = self.get_suppliers()
+        buyers = self.get_buyers()
+        
+        region_map = {}
+        
+        for s in suppliers:
+            loc = s.location.strip()
+            if not loc: loc = "Other"
+            
+            if loc not in region_map:
+                region_map[loc] = {
+                    "name": loc,
+                    "coords": [s.coords.lat, s.coords.lng],
+                    "prices": [],
+                    "supply_tonnes": 0,
+                    "active_suppliers": set(),
+                    "demand_tonnes": 0,
+                    "active_buyers": set()
+                }
+            
+            region_map[loc]["supply_tonnes"] += s.availableTonnes
+            region_map[loc]["prices"].append(s.pricePerTon)
+            region_map[loc]["active_suppliers"].add(s.id)
+            
+        for b in buyers:
+            loc = b.location.strip()
+            if not loc: loc = "Other"
+            
+            if loc not in region_map:
+                region_map[loc] = {
+                    "name": loc,
+                    "coords": [b.coords.lat, b.coords.lng],
+                    "prices": [],
+                    "supply_tonnes": 0,
+                    "active_suppliers": set(),
+                    "demand_tonnes": 0,
+                    "active_buyers": set()
+                }
+            
+            region_map[loc]["demand_tonnes"] += b.quantity_needed if hasattr(b, 'quantity_needed') else (b.minPurity * 100) # fallback
+            region_map[loc]["active_buyers"].add(b.id)
+            
+        regions = []
+        for key, data in region_map.items():
+            avg_price = sum(data["prices"]) / len(data["prices"]) if data["prices"] else 0
+            regions.append(RegionData(
+                id=str(uuid.uuid4())[:8],
+                name=data["name"],
+                coords=GeoPoint(lat=data["coords"][0], lng=data["coords"][1]),
+                avgPrice=round(avg_price, 2),
+                supply=RegionSupply(totalTonnes=data["supply_tonnes"], activeSuppliers=len(data["active_suppliers"])),
+                demand=RegionDemand(totalTonnes=data["demand_tonnes"], activeBuyers=len(data["active_buyers"]))
+            ))
+            
+        return regions
