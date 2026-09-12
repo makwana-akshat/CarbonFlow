@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { EmptyState, Toast } from '../ui/Feedback';
 import { PillTabNav, type PillTab } from '../ui/Navigation';
 import { Modal, Dropdown, type DropdownItem } from '../ui/Overlays';
-import { MoreVertical, Calendar, MapPin, Gauge, Building2 } from 'lucide-react';
+import { MoreVertical, Calendar, MapPin, Gauge } from 'lucide-react';
 
 export interface BuyerRequirementItem {
   id: string;
@@ -108,7 +108,7 @@ interface MyRequirementsViewProps {
 
 export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   onNavigateToRecommendations,
-  onOpenMarketplace,
+  onOpenMarketplace: _onOpenMarketplace,
 }) => {
   const [requirements, setRequirements] = useState<BuyerRequirementItem[]>(INITIAL_REQUIREMENTS);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -123,7 +123,7 @@ export const MyRequirementsView: React.FC<MyRequirementsViewProps> = ({
   const [newApplication, setNewApplication] = useState('Building Materials');
   const [newPrice, setNewPrice] = useState('4800');
   const [newRequiredDate, setNewRequiredDate] = useState('Aug 15, 2026');
-  const [newDelivery, setNewDelivery] = useState('Cryogenic Truck');
+  const [newDelivery] = useState('Cryogenic Truck');
 
   // Detail Modal state
   const [selectedRequirement, setSelectedRequirement] = useState<BuyerRequirementItem | null>(null);

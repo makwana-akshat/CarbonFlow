@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Inbox,
   Calendar,
-  Activity,
   CreditCard,
   Globe,
   Terminal,

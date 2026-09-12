@@ -72,7 +72,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
   const transitionConfig = prefersReducedMotion
     ? { duration: 0 }
-    : { duration: 0.2, ease: 'easeInOut' };
+    : { duration: 0.2, ease: 'easeInOut' as const };
 
   return (
     <div className={`flex flex-col ${getPositionAlignment()} pointer-events-auto`}>

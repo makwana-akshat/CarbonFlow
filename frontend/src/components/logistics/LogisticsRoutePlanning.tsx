@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Shipment, TransportModeId, RouteOption } from './types';
+import type { Shipment, TransportModeId } from './types';
 import { SAMPLE_SHIPMENTS, getEligibleModes, getRouteOptionsForMode } from './mockShipments';
 import { LogisticsMap } from './LogisticsMap';
 import { ModeSelectorPanel } from './ModeSelectorPanel';
@@ -303,7 +303,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                             setIsScenarioDropdownOpen(false);
                           }}
                           className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                            forcedState === 'no-route'
+                            (forcedState as string) === 'no-route'
                               ? 'bg-[#FFF7ED] text-[#F4611E] font-semibold'
                               : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                           }`}
@@ -316,7 +316,7 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                             setIsScenarioDropdownOpen(false);
                           }}
                           className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                            forcedState === 'loading'
+                            (forcedState as string) === 'loading'
                               ? 'bg-[#FFF7ED] text-[#F4611E] font-semibold'
                               : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                           }`}

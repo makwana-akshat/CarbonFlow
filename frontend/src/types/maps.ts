@@ -63,10 +63,10 @@ export interface FacilityNode {
 
 export interface RouteAlternative {
   label: string;
-  distanceKm: number;
+  distanceKm?: number;
   costINR: number;
   timeHrs: number;
-  emissionsTCO2e: number;
+  emissionsTCO2e?: number;
 }
 
 export interface RouteData {
