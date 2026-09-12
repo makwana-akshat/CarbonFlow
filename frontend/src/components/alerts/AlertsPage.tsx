@@ -42,11 +42,20 @@ export const AlertsPage: React.FC = () => {
         if (data && data.length > 0) {
           const mapped: ActiveAlertItem[] = data.map((alert: any) => ({
             id: `ALR-${alert.id.substring(0, 4).toUpperCase()}`,
-            severity: alert.severity,
-            title: alert.title,
+            severity: alert.severity || 'warning',
+            title: alert.title || 'Alert',
             source: alert.facilities?.name || 'Unknown Facility',
-            timestamp: new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            region: alert.region || 'Western Corridor',
+            currentMetric: alert.current_metric || 'N/A',
+            expectedMetric: alert.expected_metric || 'N/A',
+            variance: alert.variance || '0%',
+            detectedTime: new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            duration: 'Active',
             description: alert.description || '',
+            operationalImpact: alert.operational_impact || 'Operational review advised.',
+            recommendedAction: alert.recommended_action || 'Review telemetry and adjust flow.',
+            actionType: 'investigate',
+            actionLabel: 'Investigate',
             acknowledged: alert.is_resolved
           }));
           setAlerts(mapped);
