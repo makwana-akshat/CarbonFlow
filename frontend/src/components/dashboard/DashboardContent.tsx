@@ -66,7 +66,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           const data = await getDashboardSummary(token);
           setApiSummary(data);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
       }
     };
@@ -215,10 +215,11 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   const maxVal = Math.max(...chartData.map((d) => d.value));
   const minVal = Math.min(...chartData.map((d) => d.value)) * 0.8;
+  const range = maxVal - minVal || 1; // Prevent division by zero if all values are identical
 
   const points = chartData.map((pt, i) => {
     const x = paddingX + (i / (chartData.length - 1)) * innerWidth;
-    const y = svgHeight - paddingY - ((pt.value - minVal) / (maxVal - minVal)) * innerHeight;
+    const y = svgHeight - paddingY - ((pt.value - minVal) / range) * innerHeight;
     return { x, y, pt, index: i };
   });
 
@@ -307,17 +308,17 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   if (dashboardState === 'error') {
     return (
-      <ErrorState
-        title="Failed to synchronize dashboard metrics"
-        description="Could not connect to the regional CO2 clearing telemetry pipeline. Please retry."
+      <ErrorState 
+        title="Unable to load dashboard" 
+        message="There was a problem loading your performance metrics."
         onRetry={onRetry}
       />
     );
   }
 
   return (
-    <div className="w-full space-y-6 text-left">
-      
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
       {/* ========================================================================= */}
       {/* === 1. HEADER ROW ======================================================= */}
       {/* ========================================================================= */}
