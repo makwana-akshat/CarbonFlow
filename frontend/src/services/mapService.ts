@@ -1,17 +1,9 @@
 /**
  * mapService — Data querying, filtering, and geolocation helpers for CarbonFlow Maps.
  * All business logic for filtering entities is centralized here, keeping components pure.
- * Future: replace mock imports with API calls to GET /api/v1/map/*
  */
 
-import {
-  SUPPLIERS,
-  BUYERS,
-  FACILITIES,
-  ROUTES,
-  REGIONS,
-  CARBON_FLOW_EDGES,
-} from '../data/mapsMockData';
+import { fetchWithAuth } from './api';
 import type {
   SupplierNode,
   BuyerNode,
@@ -22,11 +14,59 @@ import type {
   MapFilterState,
   GeoPoint,
 } from '../types/maps';
+import { REGIONS } from '../data/mapsMockData';
+
+// ─── API Fetchers ─────────────────────────────────────────────────────────────
+
+export async function fetchSuppliers(token: string | null): Promise<SupplierNode[]> {
+  try {
+    const data = await fetchWithAuth('/maps/suppliers', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchBuyers(token: string | null): Promise<BuyerNode[]> {
+  try {
+    const data = await fetchWithAuth('/maps/buyers', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchFacilities(token: string | null): Promise<FacilityNode[]> {
+  try {
+    const data = await fetchWithAuth('/maps/facilities', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRoutes(token: string | null): Promise<RouteData[]> {
+  try {
+    const data = await fetchWithAuth('/maps/routes', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCarbonFlows(token: string | null): Promise<CarbonFlowEdge[]> {
+  try {
+    const data = await fetchWithAuth('/maps/carbon-flows', token);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
 // ─── Supplier Queries ─────────────────────────────────────────────────────────
 
-export function getSuppliers(filters: MapFilterState, searchQuery: string): SupplierNode[] {
-  return SUPPLIERS.filter((s) => {
+export function getSuppliers(suppliers: SupplierNode[], filters: MapFilterState, searchQuery: string): SupplierNode[] {
+  return suppliers.filter((s) => {
     if (filters.region && !s.location.toLowerCase().includes(filters.region.toLowerCase())) return false;
     if (filters.industry && s.industry.toLowerCase() !== filters.industry.toLowerCase()) return false;
     if (s.purity < filters.minPurity) return false;
@@ -48,8 +88,8 @@ export function getSuppliers(filters: MapFilterState, searchQuery: string): Supp
 
 // ─── Buyer Queries ────────────────────────────────────────────────────────────
 
-export function getBuyers(filters: MapFilterState, searchQuery: string): BuyerNode[] {
-  return BUYERS.filter((b) => {
+export function getBuyers(buyers: BuyerNode[], filters: MapFilterState, searchQuery: string): BuyerNode[] {
+  return buyers.filter((b) => {
     if (filters.region && !b.location.toLowerCase().includes(filters.region.toLowerCase())) return false;
     if (filters.application && b.application.toLowerCase() !== filters.application.toLowerCase()) return false;
     if (b.minPurity < filters.minPurity) return false;
@@ -69,8 +109,8 @@ export function getBuyers(filters: MapFilterState, searchQuery: string): BuyerNo
 
 // ─── Facility Queries ─────────────────────────────────────────────────────────
 
-export function getFacilities(_filters: MapFilterState, searchQuery: string): FacilityNode[] {
-  return FACILITIES.filter((f) => {
+export function getFacilities(facilities: FacilityNode[], _filters: MapFilterState, searchQuery: string): FacilityNode[] {
+  return facilities.filter((f) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -85,8 +125,8 @@ export function getFacilities(_filters: MapFilterState, searchQuery: string): Fa
 
 // ─── Route Queries ────────────────────────────────────────────────────────────
 
-export function getRoutes(filters: MapFilterState, searchQuery: string): RouteData[] {
-  return ROUTES.filter((r) => {
+export function getRoutes(routes: RouteData[], filters: MapFilterState, searchQuery: string): RouteData[] {
+  return routes.filter((r) => {
     if (r.distanceKm > filters.maxDistance) return false;
     if (r.estimatedCostINR > filters.maxTransportCost) return false;
     if (searchQuery.trim()) {
@@ -110,8 +150,8 @@ export function getRegions(filters: MapFilterState): RegionData[] {
 
 // ─── Carbon Flow Queries ──────────────────────────────────────────────────────
 
-export function getCarbonFlows(): CarbonFlowEdge[] {
-  return CARBON_FLOW_EDGES;
+export function getCarbonFlows(flows: CarbonFlowEdge[]): CarbonFlowEdge[] {
+  return flows;
 }
 
 // ─── Search across all entities ───────────────────────────────────────────────
@@ -124,22 +164,27 @@ export interface SearchResult {
   coords: GeoPoint;
 }
 
-export function searchEntities(query: string): SearchResult[] {
+export function searchEntities(
+  suppliers: SupplierNode[],
+  buyers: BuyerNode[],
+  facilities: FacilityNode[],
+  query: string
+): SearchResult[] {
   if (!query.trim()) return [];
   const q = query.toLowerCase();
   const results: SearchResult[] = [];
 
-  for (const s of SUPPLIERS) {
+  for (const s of suppliers) {
     if (s.name.toLowerCase().includes(q) || s.location.toLowerCase().includes(q)) {
       results.push({ id: s.id, label: s.name, subtitle: s.location, type: 'supplier', coords: s.coords });
     }
   }
-  for (const b of BUYERS) {
+  for (const b of buyers) {
     if (b.name.toLowerCase().includes(q) || b.location.toLowerCase().includes(q) || b.organisation.toLowerCase().includes(q)) {
       results.push({ id: b.id, label: b.name, subtitle: b.location, type: 'buyer', coords: b.coords });
     }
   }
-  for (const f of FACILITIES) {
+  for (const f of facilities) {
     if (f.name.toLowerCase().includes(q) || f.location.toLowerCase().includes(q)) {
       results.push({ id: f.id, label: f.name, subtitle: f.location, type: 'facility', coords: f.coords });
     }
@@ -165,3 +210,4 @@ export function distanceKm(a: GeoPoint, b: GeoPoint): number {
     Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
+

@@ -2,46 +2,67 @@ from app.core.config import settings
 from supabase import create_client, Client
 from app.schemas.maps import SupplierNode, BuyerNode, FacilityNode, RouteData, CarbonFlowEdge, GeoPoint
 
+def get_coords_from_name(name: str):
+    name_lower = (name or "").lower()
+    if 'ahmedabad' in name_lower: return GeoPoint(lat=23.0225, lng=72.5714)
+    if 'surat' in name_lower: return GeoPoint(lat=21.1702, lng=72.8311)
+    if 'jamnagar' in name_lower: return GeoPoint(lat=22.4707, lng=70.0700)
+    if 'hazira' in name_lower: return GeoPoint(lat=21.1100, lng=72.6500)
+    if 'vadodara' in name_lower: return GeoPoint(lat=22.3072, lng=73.1812)
+    if 'mundra' in name_lower: return GeoPoint(lat=22.8400, lng=69.7200)
+    if 'mumbai' in name_lower: return GeoPoint(lat=19.0760, lng=72.8777)
+    if 'pune' in name_lower: return GeoPoint(lat=18.5204, lng=73.8567)
+    if 'chennai' in name_lower: return GeoPoint(lat=13.0827, lng=80.2707)
+    return GeoPoint(lat=22.0, lng=72.0)
+
 class MapService:
     def __init__(self):
         self.db: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
     def get_suppliers(self):
-        # We simulate suppliers using users with role=supplier and co2_listings
-        res = self.db.table("co2_listings").select("*, users(*)").execute()
+        res = self.db.table("co2_listings").select("*").execute()
         suppliers = []
         for l in res.data:
-            if l['users']:
-                # mock coords for demo
-                suppliers.append(SupplierNode(
-                    id=l['id'],
-                    coords=GeoPoint(lat=22.4707, lng=70.0577), # Jamnagar roughly
-                    name=l['users']['company_name'] or "Unknown Supplier",
-                    location="Jamnagar, GJ",
-                    industry="Refining",
-                    facilityType="Point-Source",
-                    availableTonnes=l['volume_tpa'],
-                    purity=l['purity_percentage'],
-                    pricePerTon=l['price_per_ton'],
-                    verified=True
-                ))
+            facility_name = l.get('facility_name', 'Unknown Facility')
+            coords = get_coords_from_name(facility_name)
+            
+            suppliers.append(SupplierNode(
+                id=l['id'],
+                coords=coords,
+                name=facility_name,
+                location=facility_name,
+                industry="Industrial",
+                facilityType="Point-Source",
+                availableTonnes=l.get('volume_tpa', 0),
+                purity=l.get('purity_percentage', 99.0),
+                pricePerTon=l.get('price_per_ton', 4000),
+                verified=True
+            ))
         return suppliers
 
     def get_buyers(self):
-        res = self.db.table("co2_requests").select("*, users(*)").execute()
+        res = self.db.table("co2_requests").select("*").execute()
         buyers = []
-        for r in res.data:
-            if r['users']:
-                buyers.append(BuyerNode(
-                    id=r['id'],
-                    coords=GeoPoint(lat=17.3850, lng=78.4867), # Hyderabad
-                    name=r['users']['company_name'] or "Unknown Buyer",
-                    organisation="Deccan Cement",
-                    location="Hyderabad, TS",
-                    application=r['required_grade'],
-                    minPurity=95.0,
-                    verified=True
-                ))
+        for i, r in enumerate(res.data):
+            # Fallback coordinate assignment based on index if no location text exists
+            coords_list = [
+                GeoPoint(lat=23.07, lng=72.61), # Ahmedabad area
+                GeoPoint(lat=21.21, lng=72.87), # Surat area
+                GeoPoint(lat=22.44, lng=70.04), # Jamnagar area
+                GeoPoint(lat=19.04, lng=72.84)  # Mumbai area
+            ]
+            coords = coords_list[i % len(coords_list)]
+            
+            buyers.append(BuyerNode(
+                id=r['id'],
+                coords=coords,
+                name=f"Buyer {r['id'][:8]}",
+                organisation="CarbonFlow Buyer",
+                location="Industrial Zone",
+                application=r.get('required_grade', 'Industrial'),
+                minPurity=95.0,
+                verified=True
+            ))
         return buyers
 
     def get_facilities(self):
@@ -68,18 +89,17 @@ class MapService:
                 buyerId=r['buyer_id'],
                 supplierName=r['supplier_name'],
                 buyerName=r['buyer_name'],
-                geometry=[GeoPoint(lat=p['lat'], lng=p['lng']) for p in r['geometry']] if r['geometry'] else [],
-                distanceKm=r['distance_km'] or 0,
-                travelTimeHrs=r['travel_time_hrs'] or 0,
-                estimatedCostINR=r['estimated_cost_inr'] or 0,
-                transportMode=r['transport_mode'] or "Road",
-                emissionsTco2e=r['emissions_tco2e'],
-                reliabilityScore=r['reliability_score']
+                geometry=[GeoPoint(lat=p['lat'], lng=p['lng']) for p in r.get('geometry', [])] if r.get('geometry') else [],
+                distanceKm=r.get('distance_km') or 0,
+                travelTimeHrs=r.get('travel_time_hrs') or 0,
+                estimatedCostINR=r.get('estimated_cost_inr') or 0,
+                transportMode=r.get('transport_mode') or "Road",
+                emissionsTco2e=r.get('emissions_tco2e'),
+                reliabilityScore=r.get('reliability_score')
             ))
         return routes
 
     def get_carbon_flows(self):
-        # We can map active orders to carbon flows
         res = self.db.table("orders").select("*").eq("status", "Continuous Flow").execute()
         flows = []
         for o in res.data:
