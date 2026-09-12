@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, type Column } from '../ui/DataDisplay';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -9,7 +9,7 @@ import { Modal, Dropdown, type DropdownItem } from '../ui/Overlays';
 import { MoreVertical, Plus, Factory, Truck } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuth } from '@clerk/clerk-react';
-import { getListings } from '../../services/marketplaceApi';
+import { getMyListings, createListing, updateListing } from '../../services/marketplaceApi';
 import { useNavigate } from 'react-router-dom';
 
 export type SupplyStatus = 'all' | 'active' | 'paused' | 'draft' | 'sold_out';
@@ -24,199 +24,133 @@ export interface SupplierListingItem {
   pricePerTon: number;
   transportMode: string;
   location: string;
-  status: 'active' | 'paused' | 'draft' | 'sold_out';
+  status: 'active' | 'paused' | 'draft' | 'sold_out' | string;
   buyerRequestsCount: number;
   postedDate: string;
   notes?: string;
 }
 
-// Resilient supplier listings mock data
-const INITIAL_SUPPLIER_LISTINGS: SupplierListingItem[] = [
-  {
-    id: 'SL-101',
-    facilityName: 'AeroCapture DAC Unit IV',
-    sourceType: 'Direct Air Capture (DAC)',
-    co2Grade: 'Ultra-Pure Food/Beverage',
-    purity: 99.8,
-    volumeTpa: 12500,
-    pricePerTon: 5800,
-    transportMode: 'Pipeline-ready',
-    location: 'Dahej Industrial Zone, Gujarat',
-    status: 'active',
-    buyerRequestsCount: 4,
-    postedDate: 'Aug 18, 2026',
-    notes: 'Continuous metered DAC output feed linked to regional trunk 04.',
-  },
-  {
-    id: 'SL-102',
-    facilityName: 'AeroCapture Biogenic Hub 2',
-    sourceType: 'Biogenic Fermentation',
-    co2Grade: 'Chemical Grade Raw Feedstock',
-    purity: 98.7,
-    volumeTpa: 8400,
-    pricePerTon: 4600,
-    transportMode: 'Cryogenic Truck',
-    location: 'Bharuch Agro Cluster, Gujarat',
-    status: 'active',
-    buyerRequestsCount: 2,
-    postedDate: 'Aug 24, 2026',
-    notes: 'High flow rate biogenic stream certified under IS-17482.',
-  },
-  {
-    id: 'SL-103',
-    facilityName: 'Surat Flue Scrubbing Facility #1',
-    sourceType: 'Post-Combustion Chemical Absorption',
-    co2Grade: 'Industrial Sequester-Grade',
-    purity: 96.2,
-    volumeTpa: 22000,
-    pricePerTon: 3900,
-    transportMode: 'ISO Rail Tanker',
-    location: 'Hazira Industrial Corridor, Surat',
-    status: 'paused',
-    buyerRequestsCount: 0,
-    postedDate: 'Jul 11, 2026',
-    notes: 'Scheduled scrubber maintenance until October 1.',
-  },
-  {
-    id: 'SL-104',
-    facilityName: 'Mundra Air Stripping Prototype Array',
-    sourceType: 'Direct Air Capture (DAC)',
-    co2Grade: 'Electronic/Battery Precursor Grade',
-    purity: 99.95,
-    volumeTpa: 3500,
-    pricePerTon: 7200,
-    transportMode: 'Cryogenic Truck',
-    location: 'Mundra Port Logistics SEZ, Kutch',
-    status: 'draft',
-    buyerRequestsCount: 0,
-    postedDate: 'Sep 02, 2026',
-    notes: 'Awaiting final Third-Party ISO-14064 metrology validation.',
-  },
-  {
-    id: 'SL-105',
-    facilityName: 'Vapi Chemical Off-Gas Recovery Phase 1',
-    sourceType: 'Chlor-Alkali Byproduct',
-    co2Grade: 'Polymer Synthesis Grade',
-    purity: 99.4,
-    volumeTpa: 6000,
-    pricePerTon: 5100,
-    transportMode: 'Pipeline-ready',
-    location: 'Vapi GIDC Industrial Area',
-    status: 'sold_out',
-    buyerRequestsCount: 7,
-    postedDate: 'Jun 15, 2026',
-    notes: 'Fully contracted to Tata Steel Cleantech under Annual Offtake Contract #CF-001.',
-  },
-];
-
 export const MySupplyView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<SupplierListingItem | null>(null);
-  const [localListings, setLocalListings] = useState<SupplierListingItem[]>(INITIAL_SUPPLIER_LISTINGS);
 
   const { showToast } = useAppStore();
   const { getToken } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Debounce search query to avoid aggressive API requests
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // TanStack Query for server state
-  const { data: serverListings, isLoading: _isLoading } = useQuery({
-    queryKey: ['my-supply-listings'],
+  const { data: serverData, isLoading } = useQuery({
+    queryKey: ['my-supply-listings', statusFilter, debouncedSearch],
     queryFn: async () => {
       try {
         const token = await getToken();
-        if (!token) return INITIAL_SUPPLIER_LISTINGS;
-        const res = await getListings(token);
-        if (res && Array.isArray(res) && res.length > 0) {
-          return res.map((item: any) => ({
-            id: item.id,
-            facilityName: item.facility_name || 'Registered Supply Plant',
-            sourceType: item.source_type || 'Industrial Carbon Capture',
-            co2Grade: item.co2_grade || 'Standard Purity',
-            purity: item.purity_percentage || 98.5,
-            volumeTpa: item.volume_tpa || 5000,
-            pricePerTon: item.price_per_ton || 4500,
-            transportMode: Array.isArray(item.transport_modes) ? item.transport_modes[0] : 'Pipeline-ready',
-            location: item.location || 'Gujarat Industrial Cluster',
-            status: item.status || 'active',
-            buyerRequestsCount: 0,
-            postedDate: new Date(item.created_at || Date.now()).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-            notes: item.notes || '',
-          }));
-        }
-        return INITIAL_SUPPLIER_LISTINGS;
-      } catch {
-        return INITIAL_SUPPLIER_LISTINGS;
+        if (!token) return { items: [], counts: {} };
+        const params = new URLSearchParams();
+        if (statusFilter !== 'all') params.append('status', statusFilter);
+        if (debouncedSearch) params.append('search', debouncedSearch);
+
+        const res = await getMyListings(token, params);
+        
+        // Map API response to UI model
+        const items = (res.items || []).map((item: any) => ({
+          id: item.id,
+          facilityName: item.facility_name || 'Registered Supply Plant',
+          sourceType: item.source_type || 'Industrial Carbon Capture',
+          co2Grade: item.co2_grade || 'Standard Purity',
+          purity: item.purity_percentage || 98.5,
+          volumeTpa: item.volume_tpa || 5000,
+          pricePerTon: item.price_per_ton || 4500,
+          transportMode: Array.isArray(item.transport_modes) ? item.transport_modes[0] : 'Pipeline-ready',
+          location: item.location || 'Gujarat Industrial Cluster',
+          status: item.status || 'active',
+          buyerRequestsCount: 0, // Demand requirements are not currently mapped back to listings directly
+          postedDate: new Date(item.created_at || Date.now()).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
+          notes: item.notes || '',
+        }));
+        
+        return { items, counts: res.counts || {} };
+      } catch (e) {
+        console.error("Failed to fetch listings:", e);
+        // Error state, return empty to trigger the EmptyState and not old mock data
+        return { items: [], counts: {} };
       }
     },
-    initialData: INITIAL_SUPPLIER_LISTINGS,
   });
 
-  // Active listings list merging server query and local creations
-  const listings = useMemo(() => {
-    return localListings.length > 0 ? localListings : serverListings;
-  }, [localListings, serverListings]);
+  const listings: SupplierListingItem[] = serverData?.items || [];
+  const counts = serverData?.counts || { all: 0, active: 0, paused: 0, draft: 0, sold_out: 0 };
 
-  // Status counts for PillTabNav
+  // Status counts for PillTabNav natively bound to DB aggregate counts
   const statusTabs: PillTab[] = useMemo(() => {
-    const counts = {
-      all: listings.length,
-      active: listings.filter((l) => l.status === 'active').length,
-      paused: listings.filter((l) => l.status === 'paused').length,
-      draft: listings.filter((l) => l.status === 'draft').length,
-      sold_out: listings.filter((l) => l.status === 'sold_out').length,
-    };
-
     return [
-      { id: 'all', label: `All (${counts.all})` },
-      { id: 'active', label: `Active (${counts.active})` },
-      { id: 'paused', label: `Paused (${counts.paused})` },
-      { id: 'draft', label: `Draft (${counts.draft})` },
-      { id: 'sold_out', label: `Sold Out (${counts.sold_out})` },
+      { id: 'all', label: `All (${counts.all || 0})` },
+      { id: 'active', label: `Active (${counts.active || 0})` },
+      { id: 'paused', label: `Paused (${counts.paused || 0})` },
+      { id: 'draft', label: `Draft (${counts.draft || 0})` },
+      { id: 'sold_out', label: `Sold Out (${counts.sold_out || 0})` },
     ];
-  }, [listings]);
+  }, [counts]);
 
-  // Filtered dataset
-  const filteredListings = useMemo(() => {
-    return listings.filter((item) => {
-      if (statusFilter !== 'all' && item.status !== statusFilter) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const match =
-          item.facilityName.toLowerCase().includes(q) ||
-          item.sourceType.toLowerCase().includes(q) ||
-          item.co2Grade.toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q);
-        if (!match) return false;
-      }
-      return true;
-    });
-  }, [listings, statusFilter, searchQuery]);
+  // Mutations
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const token = await getToken();
+      return updateListing(token, id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-supply-listings'] });
+    },
+    onError: (error) => {
+      showToast('Failed to update listing.');
+      console.error(error);
+    }
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const token = await getToken();
+      return createListing(token, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-supply-listings'] });
+      setIsNewModalOpen(false);
+      showToast(`New listing successfully published.`);
+      // Reset Form
+      setFormFacility('');
+      setFormVolume('10000');
+      setFormPrice('5200');
+    },
+    onError: (error) => {
+      showToast('Failed to create listing.');
+      console.error(error);
+    }
+  });
 
   // Actions handler
   const handleAction = (actionId: string, listing: SupplierListingItem) => {
     if (actionId === 'pause') {
-      setLocalListings((prev) =>
-        prev.map((l) => (l.id === listing.id ? { ...l, status: 'paused' } : l))
-      );
-      showToast(`Listing "${listing.facilityName}" has been paused.`);
+      updateMutation.mutate({ id: listing.id, data: { status: 'paused' } });
+      showToast(`Pausing listing "${listing.facilityName}"...`);
     } else if (actionId === 'publish') {
-      setLocalListings((prev) =>
-        prev.map((l) => (l.id === listing.id ? { ...l, status: 'active' } : l))
-      );
-      showToast(`Listing "${listing.facilityName}" is now active on the Marketplace.`);
+      updateMutation.mutate({ id: listing.id, data: { status: 'active' } });
+      showToast(`Publishing listing "${listing.facilityName}"...`);
     } else if (actionId === 'close') {
-      setLocalListings((prev) =>
-        prev.map((l) => (l.id === listing.id ? { ...l, status: 'sold_out' } : l))
-      );
-      showToast(`Listing "${listing.facilityName}" marked as sold out.`);
+      updateMutation.mutate({ id: listing.id, data: { status: 'sold_out' } });
+      showToast(`Marking "${listing.facilityName}" as sold out...`);
     } else if (actionId === 'edit') {
       setSelectedListing(listing);
     }
@@ -239,30 +173,18 @@ export const MySupplyView: React.FC = () => {
       return;
     }
 
-    const newListing: SupplierListingItem = {
-      id: `SL-${Math.floor(100 + Math.random() * 900)}`,
-      facilityName: formFacility.trim(),
-      sourceType: formSource,
-      co2Grade: formGrade,
-      purity: parseFloat(formPurity) || 99.0,
-      volumeTpa: parseInt(formVolume, 10) || 5000,
-      pricePerTon: parseInt(formPrice, 10) || 4800,
-      transportMode: formTransport,
+    createMutation.mutate({
+      facility_name: formFacility.trim(),
+      source_type: formSource,
+      co2_grade: formGrade,
+      purity_percentage: parseFloat(formPurity) || 99.0,
+      volume_tpa: parseInt(formVolume, 10) || 5000,
+      price_per_ton: parseInt(formPrice, 10) || 4800,
+      transport_modes: [formTransport],
       location: formLocation,
       status: 'active',
-      buyerRequestsCount: 0,
-      postedDate: 'Today',
       notes: 'Freshly registered output stream.',
-    };
-
-    setLocalListings([newListing, ...listings]);
-    setIsNewModalOpen(false);
-    showToast(`New listing "${newListing.facilityName}" successfully published.`);
-
-    // Reset Form
-    setFormFacility('');
-    setFormVolume('10000');
-    setFormPrice('5200');
+    });
   };
 
   // Table columns definition
@@ -276,8 +198,8 @@ export const MySupplyView: React.FC = () => {
             <span className="font-semibold text-[14px] text-[var(--ink)] hover:text-[var(--accent-primary)] transition-colors cursor-pointer">
               {row.facilityName}
             </span>
-            <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded">
-              {row.id}
+            <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded" title={row.id}>
+              {row.id.split('-')[0] + '-' + row.id.split('-')[1].substring(0, 4)}
             </span>
           </div>
           <div className="text-[12px] text-[var(--text-secondary-accessible)] flex items-center gap-1.5 flex-wrap">
@@ -305,6 +227,7 @@ export const MySupplyView: React.FC = () => {
           paused: { variant: 'outline-warning', label: 'Paused' },
           draft: { variant: 'neutral', label: 'Draft' },
           sold_out: { variant: 'neutral', label: 'Sold Out' },
+          inactive: { variant: 'outline-danger', label: 'Inactive' },
         };
         const current = variants[row.status] || { variant: 'neutral', label: row.status };
         return <Badge variant={current.variant}>{current.label}</Badge>;
@@ -352,18 +275,20 @@ export const MySupplyView: React.FC = () => {
         const items: DropdownItem[] = [];
         if (row.status === 'active') {
           items.push({ id: 'pause', label: 'Pause Listing' });
-          items.push({ id: 'edit', label: 'Edit Terms' });
+          items.push({ id: 'edit', label: 'View Terms' });
           items.push({ id: 'close', label: 'Mark as Sold Out' });
         } else if (row.status === 'paused') {
           items.push({ id: 'publish', label: 'Publish (Resume)' });
-          items.push({ id: 'edit', label: 'Edit Terms' });
+          items.push({ id: 'edit', label: 'View Terms' });
           items.push({ id: 'close', label: 'Mark as Sold Out' });
         } else if (row.status === 'draft') {
           items.push({ id: 'publish', label: 'Publish to Market' });
-          items.push({ id: 'edit', label: 'Edit Draft' });
+          items.push({ id: 'edit', label: 'View Draft' });
         } else if (row.status === 'sold_out') {
           items.push({ id: 'publish', label: 'Re-list Volume' });
-          items.push({ id: 'edit', label: 'Edit Listing' });
+          items.push({ id: 'edit', label: 'View Listing' });
+        } else {
+            items.push({ id: 'publish', label: 'Publish to Market' });
         }
 
         return (
@@ -410,6 +335,7 @@ export const MySupplyView: React.FC = () => {
           variant="primary"
           onClick={() => setIsNewModalOpen(true)}
           className="flex items-center gap-2 self-start sm:self-auto shadow-sm"
+          disabled={createMutation.isPending}
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>New Listing</span>
@@ -437,19 +363,21 @@ export const MySupplyView: React.FC = () => {
       </div>
 
       {/* 3. TABLE OR EMPTY STATE */}
-      {filteredListings.length === 0 ? (
+      {isLoading ? (
+        <div className="py-12 flex justify-center text-[var(--text-secondary)]">Loading your supply listings...</div>
+      ) : listings.length === 0 ? (
         <EmptyState
           icon={<Factory className="w-8 h-8 text-[var(--text-secondary)] stroke-[1.5]" />}
-          title={statusFilter === 'all' ? 'No listings yet' : `No ${statusFilter} listings`}
-          description="List your available CO2 and we'll surface it to matching industrial buyers."
-          ctaLabel="+ New Listing"
-          onCtaClick={() => setIsNewModalOpen(true)}
+          title={statusFilter === 'all' && !debouncedSearch ? 'No listings yet' : `No matching listings`}
+          description={statusFilter === 'all' && !debouncedSearch ? "List your available CO2 and we'll surface it to matching industrial buyers." : "Try adjusting your search or status filter."}
+          ctaLabel={statusFilter === 'all' && !debouncedSearch ? "+ New Listing" : undefined}
+          onCtaClick={statusFilter === 'all' && !debouncedSearch ? () => setIsNewModalOpen(true) : undefined}
         />
       ) : (
         <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-[var(--radius-card)] shadow-xs overflow-hidden">
           <Table
             columns={columns}
-            data={filteredListings}
+            data={listings}
             keyExtractor={(row) => row.id}
             onRowClick={(row) => setSelectedListing(row)}
           />
@@ -681,8 +609,8 @@ export const MySupplyView: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="md">
-              Publish Listing
+            <Button type="submit" variant="primary" size="md" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Publishing...' : 'Publish Listing'}
             </Button>
           </div>
         </form>

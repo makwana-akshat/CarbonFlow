@@ -149,11 +149,12 @@ class DashboardService:
         alerts = []
         
         # Get latest 4 orders
-        orders_resp = self.db.table("orders").select("id, status, created_at, volume, supplier:supplier_id(company_name), buyer:buyer_id(company_name)").eq("buyer_id" if role == "buyer" else "supplier_id", user_id).order("created_at", desc=True).limit(4).execute()
+        orders_resp = self.db.table("orders").select("id, status, created_at, volume, supplier:supplier_id(first_name, last_name), buyer:buyer_id(first_name, last_name)").eq("buyer_id" if role == "buyer" else "supplier_id", user_id).order("created_at", desc=True).limit(4).execute()
         
         if orders_resp and orders_resp.data:
             for o in orders_resp.data:
-                counterparty = o["supplier"]["company_name"] if role == "buyer" else o["buyer"]["company_name"]
+                counterparty_data = o["supplier"] if role == "buyer" else o["buyer"]
+                counterparty = f"{counterparty_data.get('first_name', '')} {counterparty_data.get('last_name', '')}".strip() if counterparty_data else "Unknown"
                 
                 # Format time nicely (just placeholder format, normally we'd do a timeago function)
                 dt = datetime.fromisoformat(o["created_at"].replace("Z", "+00:00"))
@@ -194,10 +195,10 @@ class DashboardService:
         
         # Gather context
         active_listings_resp = self.db.table("co2_listings").select("volume_tpa").eq("status", "active").execute()
-        active_requests_resp = self.db.table("co2_requests").select("quantity_needed").eq("status", "active").execute()
+        active_requests_resp = self.db.table("co2_requests").select("volume_needed").eq("status", "active").execute()
         
         total_supply = sum([float(x["volume_tpa"]) for x in active_listings_resp.data]) if active_listings_resp and active_listings_resp.data else 0
-        total_demand = sum([float(x["quantity_needed"]) for x in active_requests_resp.data]) if active_requests_resp and active_requests_resp.data else 0
+        total_demand = sum([float(x["volume_needed"]) for x in active_requests_resp.data]) if active_requests_resp and active_requests_resp.data else 0
         
         # Base fallback
         if total_supply > total_demand:

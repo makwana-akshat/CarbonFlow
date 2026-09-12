@@ -100,15 +100,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           id: l.id,
           companyName: (l.users?.first_name ? `${l.users.first_name} ${l.users.last_name || ''}`.trim() : 'Unknown Supplier'),
           facilityType: l.facility_name,
-          location: 'Dynamic API Location',
-          sourceType: 'Mixed',
+          location: l.location || 'Unknown Location',
+          sourceType: l.source_type || 'Mixed',
           purity: l.purity_percentage,
           physicalState: l.transport_modes.includes('Pipeline') ? 'Gas' : 'Liquefied',
           availableQuantity: l.volume_tpa,
           pricePerTon: l.price_per_ton,
-          distanceKm: Math.floor(Math.random() * 200),
-          availabilityWindow: 'Immediate',
-          isVerified: true,
+          distanceKm: l.distance_km || 0,
+          availabilityWindow: l.availability_window || 'Immediate',
+          isVerified: !!l.is_verified,
         }));
         setApiListings(mappedListings);
 
@@ -116,13 +116,13 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         const mappedReqs: DemandRequirement[] = reqsItems.map((r: any) => ({
           id: r.id,
           buyerCompanyName: (r.users?.first_name ? `${r.users.first_name} ${r.users.last_name || ''}`.trim() : 'Unknown Buyer'),
-          industry: 'General Industrial',
+          industry: r.application || 'General Industrial',
           application: r.required_grade || r.application || 'Unknown',
-          location: r.location || 'Dynamic API Location',
+          location: r.location || 'Unknown Location',
           minPurityRequired: r.min_purity_required || 99.0,
           quantityNeeded: r.volume_needed,
           maxPricePerTon: r.target_price,
-          maxDistanceKm: 1000,
+          maxDistanceKm: 1000, // Still not in DB but not critical
         }));
         setApiRequirements(mappedReqs);
         

@@ -65,6 +65,42 @@ class MarketplaceRepository:
             "limit": limit
         }
 
+    def get_listings_by_supplier(
+        self,
+        supplier_id: str,
+        status_filter: Optional[str] = None,
+        search_query: Optional[str] = None
+    ) -> dict:
+        # Base query for counts
+        all_listings_resp = self.db.table("co2_listings").select("status").eq("supplier_id", supplier_id).execute()
+        counts = {"all": 0, "active": 0, "paused": 0, "draft": 0, "sold_out": 0}
+        
+        if all_listings_resp and all_listings_resp.data:
+            for row in all_listings_resp.data:
+                counts["all"] += 1
+                s = row.get("status")
+                if s in counts:
+                    counts[s] += 1
+                else:
+                    counts[s] = 1 # Just in case other statuses exist
+
+        # Main query for items
+        query = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role)").eq("supplier_id", supplier_id)
+        
+        if status_filter and status_filter != "all":
+            query = query.eq("status", status_filter)
+            
+        if search_query:
+            query = query.or_(f"facility_name.ilike.%{search_query}%,location.ilike.%{search_query}%,source_type.ilike.%{search_query}%,co2_grade.ilike.%{search_query}%")
+            
+        query = query.order("created_at", desc=True)
+        response = query.execute()
+        
+        return {
+            "items": response.data,
+            "counts": counts
+        }
+
     def get_listing_by_id(self, listing_id: str) -> Optional[dict]:
         response = self.db.table("co2_listings").select("*, users!inner(first_name, last_name, email, role)").eq("id", listing_id).execute()
         return response.data[0] if response.data else None

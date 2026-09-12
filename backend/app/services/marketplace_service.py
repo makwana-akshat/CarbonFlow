@@ -15,6 +15,10 @@ class MarketplaceService:
     def get_active_listings(self, **kwargs):
         return self.repo.get_active_listings(**kwargs)
 
+    def get_my_listings(self, clerk_user_id: str, status_filter: str = None, search_query: str = None):
+        user_id = self._get_internal_user_id(clerk_user_id)
+        return self.repo.get_listings_by_supplier(user_id, status_filter, search_query)
+
     def get_listing_by_id(self, listing_id: str):
         listing = self.repo.get_listing_by_id(listing_id)
         if not listing:

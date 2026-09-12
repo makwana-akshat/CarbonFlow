@@ -35,6 +35,22 @@ def get_listings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/listings/me", response_model=dict)
+def get_my_listings(
+    status: Optional[str] = Query(None, description="Status filter (e.g. active, paused, draft, sold_out)"),
+    search: Optional[str] = Query(None, description="Search query"),
+    user: dict = Depends(require_role("supplier"))
+):
+    """Supplier gets their own listings with tab counts and filters."""
+    try:
+        return marketplace_service.get_my_listings(
+            user["clerk_user_id"],
+            status_filter=status,
+            search_query=search
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/listings/{id}")
 def get_listing(id: str):
     """Get a single active listing by ID."""

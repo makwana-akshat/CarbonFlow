@@ -11,6 +11,13 @@ class CO2ListingBase(BaseModel):
     purity_percentage: float
     transport_modes: List[str]
     status: str = "active"
+    location: Optional[str] = None
+    distance_km: Optional[float] = 0
+    source_type: Optional[str] = None
+    availability_window: Optional[str] = None
+    capture_capacity_tpa: Optional[float] = 0
+    storage_pressure_bar: Optional[float] = 0
+    is_verified: Optional[bool] = False
 
 class CO2ListingCreate(CO2ListingBase):
     pass
@@ -42,6 +49,8 @@ class CO2RequestBase(BaseModel):
     required_by_date: Optional[str] = None
     delivery_method: Optional[str] = None
     status: str = "draft"
+    is_urgent: Optional[bool] = False
+    offtake_frequency: Optional[str] = None
 
 class CO2RequestCreate(CO2RequestBase):
     pass
