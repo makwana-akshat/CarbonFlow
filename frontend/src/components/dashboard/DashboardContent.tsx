@@ -168,6 +168,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   // Chart Data: CO2 Volume Traded (Supplier) or Procurement Spend (Buyer)
   const chartData: ChartPoint[] = useMemo(() => {
+    if (apiSummary?.chartData && apiSummary.chartData.length > 0) {
+      return apiSummary.chartData;
+    }
+
     if (userRole === 'buyer') {
       return [
         { date: 'Jan 2024', label: 'Jan', value: 280, formattedValue: '₹2,800,000', delta: '+3.2%', isPositive: true },
@@ -199,7 +203,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         { date: 'Dec 2024', label: 'Dec', value: 1520, formattedValue: '15,200 t', delta: '+8.5%', isPositive: true },
       ];
     }
-  }, [userRole]);
+  }, [userRole, apiSummary]);
 
   // SVG Chart path calculation
   const svgWidth = 640;
@@ -227,15 +231,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const activePoint = hoveredPointIndex !== null ? points[hoveredPointIndex] : points[8];
 
   // Right Column 2: Listings / Matches breakdown
-  const summaryBreakdown = userRole === 'buyer' ? [
-    { label: 'Active Requirements', count: 18 },
-    { label: 'Pending Matches', count: 6 },
-    { label: 'Completed Offtakes', count: 29 },
-  ] : [
-    { label: 'Active Listings', count: 14 },
-    { label: 'Pending Inquiries', count: 8 },
-    { label: 'Fulfilled Contracts', count: 42 },
-  ];
+  const summaryBreakdown = useMemo(() => {
+    if (apiSummary?.summaryBreakdown) {
+      return apiSummary.summaryBreakdown;
+    }
+    return userRole === 'buyer' ? [
+      { label: 'Active Requirements', count: 18 },
+      { label: 'Pending Matches', count: 6 },
+      { label: 'Completed Offtakes', count: 29 },
+    ] : [
+      { label: 'Active Listings', count: 14 },
+      { label: 'Pending Inquiries', count: 8 },
+      { label: 'Fulfilled Contracts', count: 42 },
+    ];
+  }, [userRole, apiSummary]);
 
   // Right Column 3: Recent Activity items
   const recentActivities = [
