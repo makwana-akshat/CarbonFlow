@@ -12,10 +12,12 @@ class Settings(BaseSettings):
     
     # LLM Settings
     LLM_API_KEY: str | None = None
-    LLM_MODEL: str | None = "gpt-4o-mini"
+    LLM_MODEL: str | None = "qwen/qwen3.8-27b"
+    LLM_BASE_URL: str | None = "https://api.groq.com/openai/v1"
     
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

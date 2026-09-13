@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Plus } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '@clerk/clerk-react';
 import { getMyRequirements } from '../../services/marketplaceApi';
@@ -69,7 +69,7 @@ export const ProcurementPlansView: React.FC = () => {
               : 'No Contracted Corridors';
             
             // Map statuses appropriately
-            let statusBadge = '';
+            let statusBadge: React.ReactNode = null;
             if (plan.status === 'active') {
               statusBadge = <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#34C77B]/10 text-[var(--status-success)]">Active</span>;
             } else if (plan.status === 'fulfilled') {

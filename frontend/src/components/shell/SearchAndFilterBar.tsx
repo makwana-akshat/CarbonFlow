@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, SlidersHorizontal, ArrowUpDown, X, Check } from 'lucide-react';
 import type { FilterState } from '../../types/dashboard';
-import { SEARCH_CATEGORY_CHIPS } from '../../data/mockData';
+import { SEARCH_CATEGORY_CHIPS, type CategoryChip } from '../../constants/ui';
 
 interface SearchAndFilterBarProps {
   filterState: FilterState;
@@ -45,7 +45,7 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
             
             {/* Embedded Category Tag Chips inside pill input (Shipment / Cargo / Route style) */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 max-w-full">
-              {SEARCH_CATEGORY_CHIPS.slice(0, 4).map((chip) => {
+              {SEARCH_CATEGORY_CHIPS.slice(0, 4).map((chip: CategoryChip) => {
                 const isSelected = filterState.activeChip === chip.id;
                 return (
                   <button

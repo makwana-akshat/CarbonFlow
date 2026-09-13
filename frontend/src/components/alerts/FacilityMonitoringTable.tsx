@@ -1,6 +1,6 @@
 import React from 'react';
 import { Factory } from 'lucide-react';
-import { type FacilityMonitoringItem } from '../../data/alertsMock';
+import { type FacilityMonitoringItem } from '../../types/alerts';
 
 export interface FacilityMonitoringTableProps {
   facilities: FacilityMonitoringItem[];

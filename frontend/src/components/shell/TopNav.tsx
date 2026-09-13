@@ -12,7 +12,7 @@ import {
   Check
 } from 'lucide-react';
 import type { UserRole, DashboardState, TabId, TabItem } from '../../types/dashboard';
-import { NAVIGATION_TABS } from '../../data/mockData';
+import { NAVIGATION_TABS } from '../../constants/ui';
 
 interface TopNavProps {
   activeTab: TabId;

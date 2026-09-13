@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { Award } from 'lucide-react';
-import type { ContributorItem } from '../../data/carbonImpactMock';
+import type { ContributorItem } from '../../types/impact';
 
 export const TopContributorsTable: React.FC = () => {
   const { topContributors } = useCarbonImpact();

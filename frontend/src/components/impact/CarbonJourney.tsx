@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { ArrowRight, ArrowDown, ChevronRight, Info } from 'lucide-react';
-import type { JourneyStage } from '../../data/carbonImpactMock';
+import type { JourneyStage } from '../../types/impact';
 
 export const CarbonJourney: React.FC = () => {
   const { journeyStages, selectStage } = useCarbonImpact();

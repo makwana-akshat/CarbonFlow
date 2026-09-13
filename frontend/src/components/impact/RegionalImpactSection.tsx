@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { MapPin, Factory, ArrowUpRight, CheckCircle2, Truck } from 'lucide-react';
-import type { RegionalImpactItem } from '../../data/carbonImpactMock';
+import type { RegionalImpactItem } from '../../types/impact';
 
 export const RegionalImpactSection: React.FC = () => {
   const { regionalData, selectedRegionId, selectRegion, activeRegionDetail } = useCarbonImpact();

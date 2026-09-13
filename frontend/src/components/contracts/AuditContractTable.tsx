@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronRight, FileText } from 'lucide-react';
-import type { AuditContractItem, AuditContractStatus } from '../../data/auditContractsMock';
+import type { AuditContractItem, AuditContractStatus } from '../../types/contracts';
 
 export interface AuditContractTableProps {
   contracts: AuditContractItem[];

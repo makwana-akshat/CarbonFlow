@@ -1,4 +1,4 @@
-// Centralized Mock Data and Domain Contracts for Carbon Impact Reporting
+﻿// Centralized Mock Data and Domain Contracts for Carbon Impact Reporting
 
 export interface ImpactOverviewMetric {
   id: string;
@@ -98,14 +98,14 @@ export interface PlatformSummaryStats {
   verifiedClearingVolumeTonnes: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // BASE PLATFORM CONSTANTS (Single Source of Truth)
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export const BASE_OVERVIEW_METRICS: ImpactOverviewMetric[] = [
   {
     id: 'captured',
-    label: 'CO₂ Captured',
+    label: 'COΓéé Captured',
     tonnes: 52400,
     formattedTonnes: '52,400',
     unit: 'tonnes',
@@ -115,7 +115,7 @@ export const BASE_OVERVIEW_METRICS: ImpactOverviewMetric[] = [
   },
   {
     id: 'listed',
-    label: 'CO₂ Listed',
+    label: 'COΓéé Listed',
     tonnes: 47800,
     formattedTonnes: '47,800',
     unit: 'tonnes',
@@ -125,7 +125,7 @@ export const BASE_OVERVIEW_METRICS: ImpactOverviewMetric[] = [
   },
   {
     id: 'matched',
-    label: 'CO₂ Matched',
+    label: 'COΓéé Matched',
     tonnes: 38200,
     formattedTonnes: '38,200',
     unit: 'tonnes',
@@ -135,7 +135,7 @@ export const BASE_OVERVIEW_METRICS: ImpactOverviewMetric[] = [
   },
   {
     id: 'utilized',
-    label: 'CO₂ Utilized',
+    label: 'COΓéé Utilized',
     tonnes: 34800,
     formattedTonnes: '34,800',
     unit: 'tonnes',
@@ -161,7 +161,7 @@ export const BASE_JOURNEY_STAGES: JourneyStage[] = [
       completed: 218,
       pending: 14,
       activeFacilities: 127,
-      description: 'Physical CO₂ volumes measured at industrial boundary meters across cement, chemical synthesis, and direct air capture facilities prior to market listing.',
+      description: 'Physical COΓéé volumes measured at industrial boundary meters across cement, chemical synthesis, and direct air capture facilities prior to market listing.',
       custodyCompliance: 'ISO 27913 Annex A (Metered Injection)',
     },
   },
@@ -181,7 +181,7 @@ export const BASE_JOURNEY_STAGES: JourneyStage[] = [
       completed: 189,
       pending: 7,
       activeFacilities: 94,
-      description: 'CO₂ lots certified with chemical purity assays and published to the CarbonFlow order books for buyer discovery and automated clearing.',
+      description: 'COΓéé lots certified with chemical purity assays and published to the CarbonFlow order books for buyer discovery and automated clearing.',
       custodyCompliance: 'EIGA / CGA Industrial Gas Spec G-6.2',
     },
   },
@@ -479,7 +479,7 @@ export const BASE_RECENT_ACTIVITY: RecentActivityItem[] = [
     destination: 'XYZ Fuels Synthetic Unit',
     volumeTonnes: 2500,
     formattedVolume: '2,500 t',
-    region: 'Ahmedabad → Dahej',
+    region: 'Ahmedabad ΓåÆ Dahej',
     mode: 'Supercritical Pipeline',
     status: 'Completed',
     completedTime: '2 hours ago',
@@ -501,7 +501,7 @@ export const BASE_RECENT_ACTIVITY: RecentActivityItem[] = [
     destination: 'TerraCarbon Mineralization',
     volumeTonnes: 850,
     formattedVolume: '850 t',
-    region: 'Jamnagar → Mundra',
+    region: 'Jamnagar ΓåÆ Mundra',
     mode: 'Cryogenic Road Haul',
     status: 'Completed',
     completedTime: '2 days ago',
@@ -540,9 +540,9 @@ export const BASE_SUMMARY_STATS: PlatformSummaryStats = {
   verifiedClearingVolumeTonnes: 34800,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // DYNAMIC FILTER ENGINE: Recomputes real data slice based on time & region
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export interface FilterOptions {
   timeRange: '30d' | '3m' | '6m' | '1y' | 'all';

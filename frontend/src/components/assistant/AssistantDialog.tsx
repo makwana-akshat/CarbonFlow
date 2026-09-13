@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import { X, Trash2, Sparkles, CornerDownRight } from 'lucide-react';
 import { SiriOrb, type OrbState } from './SiriOrb';
 import { ChatMessage, type ChatMessageItem } from './ChatMessage';
@@ -22,6 +23,7 @@ export const AssistantDialog: React.FC<AssistantDialogProps> = ({
   setOrbState,
 }) => {
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessageItem[]>([
     {
       id: 'welcome-1',
@@ -122,6 +124,17 @@ export const AssistantDialog: React.FC<AssistantDialogProps> = ({
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+
+      // Handle structured dashboard actions
+      if (response.dashboard_action) {
+        if (response.dashboard_action.type === 'SHOW_SUPPLIER_RESULTS') {
+          navigate('/app/recommendations');
+        } else if (response.dashboard_action.type === 'SHOW_ORDER') {
+          navigate('/app/orders');
+        } else if (response.dashboard_action.type === 'SHOW_ROUTE') {
+          navigate('/app/logistics');
+        }
+      }
 
       // 3. Orb transitions to "speaking" state
       setOrbState('speaking');

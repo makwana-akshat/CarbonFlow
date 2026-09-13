@@ -19,7 +19,7 @@ import type {
   ContributorItem,
   RecentActivityItem,
   PlatformSummaryStats,
-} from '../data/carbonImpactMock'; // Keeping the types from the mock file
+} from '../types/impact'; // Keeping the types from the mock file
 
 export type TimeRangeOption = '30d' | '3m' | '6m' | '1y' | 'all';
 

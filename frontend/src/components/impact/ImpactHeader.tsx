@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCarbonImpact, type TimeRangeOption } from '../../context/CarbonImpactContext';
 import { Download, Calendar, MapPin, RefreshCw, Loader2 } from 'lucide-react';
-import { BASE_REGIONAL_IMPACT } from '../../data/carbonImpactMock';
+import { BASE_REGIONAL_IMPACT } from '../../types/impact';
 
 export const ImpactHeader: React.FC = () => {
   const {

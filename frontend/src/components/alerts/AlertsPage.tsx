@@ -14,7 +14,7 @@ import {
   type ShipmentMonitoringItem,
   type AlertHistoryItem,
   type OperationalSummary
-} from '../../data/alertsMock';
+} from '../../types/alerts';
 import { Toast } from '../ui/Feedback';
 import { useAuth } from '@clerk/clerk-react';
 import { 

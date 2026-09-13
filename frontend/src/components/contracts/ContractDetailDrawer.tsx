@@ -9,7 +9,7 @@ import {
   Layers,
   History
 } from 'lucide-react';
-import type { AuditContractItem } from '../../data/auditContractsMock';
+import type { AuditContractItem } from '../../types/contracts';
 import { ContractAuditTimeline } from './ContractAuditTimeline';
 import { ContractVersionHistory } from './ContractVersionHistory';
 

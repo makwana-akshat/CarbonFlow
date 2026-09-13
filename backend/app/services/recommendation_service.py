@@ -53,7 +53,7 @@ class RecommendationService:
             if not reqs:
                 return []
                 
-            listings_resp = self.db.table("co2_listings").select("*, supplier:supplier_id(company_name, organisation, is_verified)").eq("status", "active").execute()
+            listings_resp = self.db.table("co2_listings").select("*, supplier:supplier_id(company_name, is_verified)").eq("status", "active").execute()
             listings = listings_resp.data if listings_resp else []
             
             for req in reqs:
@@ -98,6 +98,7 @@ class RecommendationService:
                         "delivery_timeline": "Spot / Immediate",
                         "certification": "ISO 14064-2 Verified" if lst["is_verified"] else "Self-Reported",
                         "distance": f"{distance_km} km",
+                        "location": lst.get("location", "Unknown Location"),
                         "reliability": f"{match_result['reliability_pct']}%",
                         "segment": match_result["segment_name"],
                         "reasons": match_result["reasons"],
@@ -112,7 +113,7 @@ class RecommendationService:
             if not listings:
                 return []
                 
-            reqs_resp = self.db.table("co2_requests").select("*, buyer:buyer_id(company_name, organisation)").eq("status", "active").execute()
+            reqs_resp = self.db.table("co2_requests").select("*, buyer:buyer_id(company_name)").eq("status", "active").execute()
             reqs = reqs_resp.data if reqs_resp else []
             
             for lst in listings:
@@ -157,6 +158,7 @@ class RecommendationService:
                         "delivery_timeline": "Immediate Requirement",
                         "certification": "Verified Buyer",
                         "distance": f"{distance_km} km",
+                        "location": req.get("location", "Unknown Location"),
                         "reliability": "99.1%", # Hardcoded for buyers
                         "segment": req.get("application", "Standard").upper(),
                         "reasons": match_result["reasons"],

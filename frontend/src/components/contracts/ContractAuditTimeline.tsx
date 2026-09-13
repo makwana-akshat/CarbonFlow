@@ -1,9 +1,9 @@
 import React from 'react';
 import { CheckCircle2, CircleDot } from 'lucide-react';
-import type { AuditTimelineEvent } from '../../data/auditContractsMock';
+import type { TimelineEvent } from '../../types/contracts';
 
 export interface ContractAuditTimelineProps {
-  timeline: AuditTimelineEvent[];
+  timeline: TimelineEvent[];
 }
 
 export const ContractAuditTimeline: React.FC<ContractAuditTimelineProps> = ({ timeline }) => {

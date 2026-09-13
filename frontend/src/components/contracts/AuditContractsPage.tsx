@@ -6,7 +6,7 @@ import { ContractDetailDrawer } from './ContractDetailDrawer';
 import { 
   type AuditContractItem, 
   type AuditContractStatus 
-} from '../../data/auditContractsMock';
+} from '../../types/contracts';
 import { Toast } from '../ui/Feedback';
 import { useAuth } from '@clerk/clerk-react';
 import { getContracts, getComplianceSummary } from '../../services/contractsApi';
@@ -167,7 +167,7 @@ export const AuditContractsPage: React.FC = () => {
       {/* 3. Main Contract Table */}
       <AuditContractTable
         contracts={filteredContracts}
-        selectedContractId={selectedContract?.id || null}
+        selectedContractId={selectedContract?.id ? String(selectedContract.id) : null}
         onSelectContract={handleSelectContract}
       />
 

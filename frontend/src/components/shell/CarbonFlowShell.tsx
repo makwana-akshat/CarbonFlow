@@ -15,7 +15,7 @@ import { MyRequirementsView } from '../requirements/MyRequirementsView';
 import { MySupplyView } from '../supply/MySupplyView';
 import { LogisticsRoutePlanning } from '../logistics/LogisticsRoutePlanning';
 import { Button } from '../ui/Button';
-import { CheckCircle2, Menu, FolderKanban, Users, Inbox } from 'lucide-react';
+import { CheckCircle2, Menu, Users, Inbox } from 'lucide-react';
 import { UserMenu } from '../auth/UserMenu';
 import { CarbonImpactPage } from '../impact/CarbonImpactPage';
 import { AlertsPage } from '../alerts/AlertsPage';

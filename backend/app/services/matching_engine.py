@@ -103,8 +103,8 @@ class MatchingEngine:
             
         # 5. Segment Alignment (10%)
         # e.g. DAC, Biogenic, Industrial. 
-        supply_source = supply.get("source_type", "").lower()
-        req_app = demand.get("application", "").lower()
+        supply_source = (supply.get("source_type") or "").lower()
+        req_app = (demand.get("application") or "").lower()
         
         seg_score = 100.0 if supply_source == req_app else 85.0
         if supply_source:

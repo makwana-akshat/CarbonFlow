@@ -117,6 +117,42 @@ class MarketplaceRepository:
         # Soft delete by setting status to inactive
         self.db.table("co2_listings").update({"status": "inactive"}).eq("id", listing_id).execute()
 
+    # Chatbot Supplier Search — queries the SAME co2_listings table as the dashboard
+    def search_listings_for_chatbot(
+        self,
+        min_purity: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_quantity: Optional[float] = None,
+        location: Optional[str] = None,
+        limit: int = 10
+    ) -> dict:
+        """
+        Searches active CO2 listings for the chatbot tool.
+        Uses the same table and join pattern as get_active_listings().
+        Returns raw numeric fields (not formatted display strings).
+        """
+        query = self.db.table("co2_listings").select(
+            "*, users!inner(first_name, last_name, company_name, is_verified)",
+            count="exact"
+        ).eq("status", "active")
+
+        if min_purity is not None:
+            query = query.gte("purity_percentage", min_purity)
+        if max_price is not None:
+            query = query.lte("price_per_ton", max_price)
+        if min_quantity is not None:
+            query = query.gte("volume_tpa", min_quantity)
+        if location:
+            query = query.ilike("location", f"%{location}%")
+
+        query = query.order("purity_percentage", desc=True).limit(limit)
+        response = query.execute()
+
+        return {
+            "items": response.data if response.data else [],
+            "total": response.count if response.count is not None else len(response.data or [])
+        }
+
     # Requests
     def get_active_requests(
         self,

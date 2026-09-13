@@ -15,6 +15,10 @@ class MarketplaceService:
     def get_active_listings(self, **kwargs):
         return self.repo.get_active_listings(**kwargs)
 
+    def search_listings_for_chatbot(self, **kwargs):
+        """Chatbot supplier search — delegates to the same co2_listings table."""
+        return self.repo.search_listings_for_chatbot(**kwargs)
+
     def get_my_listings(self, clerk_user_id: str, status_filter: str = None, search_query: str = None):
         user_id = self._get_internal_user_id(clerk_user_id)
         return self.repo.get_listings_by_supplier(user_id, status_filter, search_query)

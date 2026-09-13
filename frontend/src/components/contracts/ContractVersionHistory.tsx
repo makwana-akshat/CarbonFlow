@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import type { ContractVersionInfo } from '../../data/auditContractsMock';
+import type { ContractVersionInfo } from '../../types/contracts';
 
 export interface ContractVersionHistoryProps {
   versions: ContractVersionInfo[];
@@ -56,7 +56,7 @@ export const ContractVersionHistory: React.FC<ContractVersionHistoryProps> = ({ 
 
             {ver.changes.length > 0 && (
               <ul className="mt-2 space-y-1 pl-3.5 border-l border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary-accessible)]">
-                {ver.changes.map((ch, idx) => (
+                {ver.changes.map((ch: string, idx: number) => (
                   <li key={idx} className="leading-snug list-disc">
                     {ch}
                   </li>

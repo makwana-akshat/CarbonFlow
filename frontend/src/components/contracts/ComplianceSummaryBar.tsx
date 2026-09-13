@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ComplianceSummary } from '../../data/auditContractsMock';
+import type { ComplianceSummary } from '../../types/contracts';
 
 export interface ComplianceSummaryBarProps {
   summary: ComplianceSummary;

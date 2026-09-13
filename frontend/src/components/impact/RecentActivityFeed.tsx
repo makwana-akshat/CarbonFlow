@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCarbonImpact } from '../../context/CarbonImpactContext';
 import { ArrowRight, Clock, Truck, ShieldCheck } from 'lucide-react';
-import type { RecentActivityItem } from '../../data/carbonImpactMock';
+import type { RecentActivityItem } from '../../types/impact';
 
 export const RecentActivityFeed: React.FC = () => {
   const { recentActivity } = useCarbonImpact();

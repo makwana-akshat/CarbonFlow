@@ -36,7 +36,6 @@ interface LogisticsRoutePlanningProps {
 
 export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
   onBackToOrders,
-  onRequestUpgrade,
   onOpenMobileMenu,
   className = '',
 }) => {
@@ -73,6 +72,10 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
   const [isRouteCollapsed, setIsRouteCollapsed] = useState(false);
   const [isAdvisoryCollapsed, setIsAdvisoryCollapsed] = useState(false);
   const [isKpiCollapsed, setIsKpiCollapsed] = useState(false);
+
+  const [isScenarioDropdownOpen, setIsScenarioDropdownOpen] = useState(false);
+  const [selectedScenarioIndex, setSelectedScenarioIndex] = useState<number | null>(null);
+  const [forcedState, setForcedState] = useState<string>('normal');
 
   // Resets to expanded by default each time a new shipment is loaded per spec
   useEffect(() => {

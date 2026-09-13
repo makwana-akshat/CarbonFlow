@@ -9,7 +9,7 @@ import {
   MapPin,
   CheckCircle2
 } from 'lucide-react';
-import type { ActiveAlertItem } from '../../data/alertsMock';
+import type { ActiveAlertItem } from '../../types/alerts';
 
 export interface AlertDetailDrawerProps {
   alert: ActiveAlertItem | null;
