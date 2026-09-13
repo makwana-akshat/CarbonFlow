@@ -1,0 +1,72 @@
+/* ====================================================================== */
+/* CarbonFlow Section 04 — Product Capabilities / Platform Detail Scoped Styles */
+/* Locked Poppins Headings, Roboto Body, Dark Technical Canvas            */
+/* ====================================================================== */
+
+.carbonflow-section04 {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #0B0A0E;
+  color: #FFFFFF;
+}
+
+.carbonflow-section04-num {
+  font-family: 'Roboto', monospace, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: #6A696F;
+}
+
+.carbonflow-section04-eyebrow {
+  font-family: 'Roboto', monospace, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8A8A90;
+}
+
+.carbonflow-section04-heading {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1.08;
+  color: #FFFFFF;
+}
+
+.carbonflow-section04-subcopy {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.6;
+  color: #9E9CA3;
+}
+
+.carbonflow-capability-title {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+}
+
+.carbonflow-capability-desc {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 1.6;
+  color: #9E9CA3;
+}
+
+.carbonflow-product-glow {
+  background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(244, 97, 30, 0.12), transparent 75%);
+}
+
+/* ====================================================================== */
+/* Reduced Motion Accessibility                                            */
+/* ====================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .carbonflow-section04 * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

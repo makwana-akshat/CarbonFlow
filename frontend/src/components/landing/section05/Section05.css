@@ -1,0 +1,479 @@
+/* ====================================================================== */
+/* CarbonFlow Section 05 - Intelligence Layer                             */
+/* ====================================================================== */
+
+.carbonflow-section05 {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(ellipse 42% 34% at 50% 45%, rgba(244, 97, 30, 0.08), transparent 66%),
+    radial-gradient(ellipse 38% 30% at 20% 68%, rgba(49, 81, 92, 0.08), transparent 70%),
+    linear-gradient(180deg, #F9F7F1 0%, #EFEBE3 100%);
+  color: #16171A;
+  isolation: isolate;
+}
+
+.carbonflow-section05-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(22, 23, 26, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 23, 26, 0.035) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(ellipse 76% 58% at 50% 54%, black 0%, transparent 76%);
+  opacity: 0.45;
+}
+
+.carbonflow-section05-intro,
+.carbonflow-intelligence-orb,
+.carbonflow-intelligence-module {
+  --section05-base-transform: translateY(0);
+  animation: carbonflow-section05-reveal 620ms cubic-bezier(.23, 1, .32, 1) both;
+}
+
+.carbonflow-section05-intro {
+  animation-delay: 40ms;
+}
+
+.carbonflow-intelligence-orb {
+  animation-delay: 180ms;
+}
+
+.carbonflow-intelligence-module {
+  animation-delay: calc(250ms + (var(--module-index) * 70ms));
+}
+
+.carbonflow-section05-eyebrow {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: rgba(22, 23, 26, 0.58);
+}
+
+.carbonflow-section05-heading,
+.carbonflow-intelligence-module-title {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.carbonflow-section05-subcopy,
+.carbonflow-intelligence-module-copy {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.carbonflow-intelligence-field {
+  min-height: 760px;
+}
+
+.carbonflow-intelligence-field::before,
+.carbonflow-intelligence-field::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.carbonflow-intelligence-field::before {
+  width: min(64vw, 720px);
+  height: min(64vw, 720px);
+  border: 1px solid rgba(22, 23, 26, 0.06);
+  box-shadow:
+    0 0 0 72px rgba(255, 255, 255, 0.15),
+    0 28px 90px rgba(23, 22, 18, 0.09);
+}
+
+.carbonflow-intelligence-field::after {
+  width: min(42vw, 460px);
+  height: min(42vw, 460px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(115, 139, 151, 0.2), transparent 60%),
+    radial-gradient(circle at 54% 54%, rgba(244, 97, 30, 0.12), transparent 66%);
+  filter: blur(18px);
+  opacity: 0.74;
+}
+
+.carbonflow-intelligence-orb-slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(136px, 13vw, 178px);
+  height: clamp(136px, 13vw, 178px);
+  --section05-base-transform: translate(-50%, -54%);
+  transform: var(--section05-base-transform);
+}
+
+.carbonflow-intelligence-orb-aura,
+.carbonflow-intelligence-orb-ring {
+  position: absolute;
+  inset: -30%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.carbonflow-intelligence-orb-aura {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(244, 97, 30, 0.2), transparent 38%),
+    radial-gradient(circle at 44% 58%, rgba(21, 39, 48, 0.2), transparent 62%);
+  filter: blur(20px);
+  opacity: 0.78;
+  transition: opacity 220ms ease, filter 220ms ease;
+}
+
+.carbonflow-intelligence-orb-ring {
+  inset: -18%;
+  border: 1px solid rgba(22, 23, 26, 0.08);
+  box-shadow: inset 0 0 28px rgba(255, 255, 255, 0.16);
+}
+
+.carbonflow-intelligence-orb[data-orb-active="true"] .carbonflow-intelligence-orb-aura {
+  filter: blur(17px);
+  opacity: 1;
+}
+
+.carbonflow-intelligence-orb:hover .carbonflow-intelligence-orb-aura,
+.carbonflow-intelligence-orb:focus-within .carbonflow-intelligence-orb-aura {
+  filter: blur(17px);
+  opacity: 1;
+}
+
+.carbonflow-intelligence-orb-button {
+  width: clamp(112px, 11vw, 158px) !important;
+  height: clamp(112px, 11vw, 158px) !important;
+  box-shadow: 0 28px 70px rgba(22, 23, 26, 0.28);
+}
+
+.carbonflow-intelligence-layout {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(150px, auto));
+  gap: 24px;
+}
+
+.carbonflow-intelligence-module {
+  box-shadow: 0 18px 44px rgba(56, 48, 36, 0.08);
+}
+
+.carbonflow-intelligence-module[data-capability="recommendations"] {
+  grid-column: 1 / span 4;
+  grid-row: 1;
+}
+
+.carbonflow-intelligence-module[data-capability="explanations"] {
+  grid-column: 9 / span 4;
+  grid-row: 1;
+}
+
+.carbonflow-intelligence-module[data-capability="market"] {
+  grid-column: 1 / span 4;
+  grid-row: 2;
+  --section05-base-transform: translateY(34px);
+  transform: var(--section05-base-transform);
+}
+
+.carbonflow-intelligence-module[data-capability="price-alerts"] {
+  grid-column: 9 / span 4;
+  grid-row: 2;
+  --section05-base-transform: translateY(34px);
+  transform: var(--section05-base-transform);
+}
+
+.carbonflow-intelligence-module[data-capability="supply-alerts"] {
+  grid-column: 2 / span 5;
+  grid-row: 4;
+}
+
+.carbonflow-intelligence-module[data-capability="ask-act"] {
+  grid-column: 7 / span 5;
+  grid-row: 4;
+}
+
+.carbonflow-intelligence-module-light {
+  position: absolute;
+  inset: auto -20% -48% 18%;
+  width: 72%;
+  height: 80%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(244, 97, 30, 0.12), transparent 64%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.carbonflow-intelligence-module:hover,
+.carbonflow-intelligence-module:focus-visible,
+.carbonflow-intelligence-module[data-active="true"] {
+  border-color: rgba(244, 97, 30, 0.28);
+  background: #FFFDF8;
+}
+
+.carbonflow-intelligence-module:hover .carbonflow-intelligence-module-light,
+.carbonflow-intelligence-module:focus-visible .carbonflow-intelligence-module-light,
+.carbonflow-intelligence-module[data-active="true"] .carbonflow-intelligence-module-light {
+  opacity: 1;
+}
+
+.carbonflow-intelligence-module:focus-visible {
+  outline: 2px solid rgba(244, 97, 30, 0.74);
+  outline-offset: 4px;
+}
+
+.carbonflow-intelligence-mark {
+  position: relative;
+  width: 96px;
+  height: 42px;
+  color: #F4611E;
+}
+
+.carbonflow-intelligence-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mark-path,
+.mark-grid,
+.mark-threshold,
+.mark-input,
+.mark-cursor {
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mark-grid {
+  opacity: 0.18;
+}
+
+.mark-threshold {
+  opacity: 0.28;
+  stroke-dasharray: 4 5;
+}
+
+.mark-path,
+.mark-input {
+  opacity: 0.72;
+}
+
+.mark-node,
+.mark-bar {
+  fill: currentColor;
+  opacity: 0.68;
+}
+
+.mark-core {
+  opacity: 0.95;
+}
+
+.mark-delay-1 {
+  animation-delay: 0ms;
+}
+
+.mark-delay-2 {
+  animation-delay: 900ms;
+}
+
+.mark-delay-3 {
+  animation-delay: 1800ms;
+}
+
+.mark-node {
+  animation: carbonflow-node-pulse 7s ease-in-out infinite;
+}
+
+.mark-market {
+  stroke-dasharray: 92;
+  stroke-dashoffset: 92;
+  animation: carbonflow-line-travel 8s ease-in-out infinite;
+}
+
+.mark-price {
+  animation: carbonflow-price-cross 7s ease-in-out infinite;
+}
+
+.mark-bar-1,
+.mark-bar-2,
+.mark-bar-3 {
+  transform-origin: bottom;
+  animation: carbonflow-supply-level 8s ease-in-out infinite;
+}
+
+.mark-bar-2 {
+  animation-delay: 1.2s;
+}
+
+.mark-bar-3 {
+  animation-delay: 2.4s;
+}
+
+.mark-cursor {
+  animation: carbonflow-cursor 5.5s steps(2, start) infinite;
+}
+
+.mark-action {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: carbonflow-line-travel 6s ease-in-out infinite;
+}
+
+@keyframes carbonflow-section05-reveal {
+  from {
+    opacity: 0;
+    transform: var(--section05-base-transform) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: var(--section05-base-transform);
+  }
+}
+
+@keyframes carbonflow-node-pulse {
+  0%, 72%, 100% {
+    opacity: 0.52;
+    transform: scale(1);
+  }
+  18%, 34% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes carbonflow-line-travel {
+  0%, 28% {
+    stroke-dashoffset: 92;
+  }
+  48%, 76% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -92;
+  }
+}
+
+@keyframes carbonflow-price-cross {
+  0%, 42%, 100% {
+    transform: translateX(0);
+  }
+  62%, 78% {
+    transform: translateX(13px);
+  }
+}
+
+@keyframes carbonflow-supply-level {
+  0%, 100% {
+    transform: scaleY(0.58);
+    opacity: 0.42;
+  }
+  48%, 68% {
+    transform: scaleY(1);
+    opacity: 0.86;
+  }
+}
+
+@keyframes carbonflow-cursor {
+  0%, 44% {
+    opacity: 1;
+  }
+  45%, 100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1023px) {
+  .carbonflow-intelligence-field {
+    min-height: 820px;
+  }
+
+  .carbonflow-intelligence-orb-slot {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 0 auto 36px;
+    width: clamp(120px, 18vw, 150px);
+    height: clamp(120px, 18vw, 150px);
+    --section05-base-transform: translateY(0);
+    transform: var(--section05-base-transform);
+  }
+
+  .carbonflow-intelligence-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    gap: 20px;
+  }
+
+  .carbonflow-intelligence-module[data-capability] {
+    grid-column: auto;
+    grid-row: auto;
+    --section05-base-transform: translateY(0);
+    transform: var(--section05-base-transform);
+  }
+
+  .carbonflow-intelligence-module[data-capability="ask-act"] {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .carbonflow-intelligence-field {
+    min-height: auto;
+  }
+
+  .carbonflow-intelligence-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .carbonflow-intelligence-module[data-capability="ask-act"] {
+    grid-column: 1 / -1;
+  }
+
+  .carbonflow-intelligence-module {
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .carbonflow-intelligence-orb-button {
+    width: 112px !important;
+    height: 112px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .carbonflow-intelligence-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .carbonflow-intelligence-module[data-capability="ask-act"] {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carbonflow-section05-intro,
+  .carbonflow-intelligence-orb,
+  .carbonflow-intelligence-module {
+    animation: none;
+  }
+
+  .mark-node,
+  .mark-market,
+  .mark-price,
+  .mark-bar,
+  .mark-cursor,
+  .mark-action {
+    animation: none;
+  }
+
+  .carbonflow-intelligence-module,
+  .carbonflow-intelligence-module-light,
+  .carbonflow-intelligence-orb-aura {
+    transition-duration: 0.01ms;
+  }
+}

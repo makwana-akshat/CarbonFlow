@@ -1,0 +1,237 @@
+/* ====================================================================== */
+/* CarbonFlow Section 03 — Platform Pillars / Architecture Scoped Styles   */
+/* Locked Poppins Headings, Roboto Body, High-Precision Isometric Keyframes*/
+/* ====================================================================== */
+
+.carbonflow-section03 {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #FAFAF8;
+  color: #16171A;
+}
+
+.carbonflow-section03-eyebrow {
+  font-family: 'Roboto', monospace, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7A7874;
+}
+
+.carbonflow-section03-num {
+  font-family: 'Roboto', monospace, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #B5B2AC;
+}
+
+.carbonflow-section03-heading {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1.1;
+  color: #16171A;
+}
+
+.carbonflow-section03-subcopy {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.6;
+  color: #5C5C58;
+}
+
+.carbonflow-pillar-title {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #16171A;
+}
+
+.carbonflow-pillar-desc {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.6;
+  color: #5C5C58;
+}
+
+/* ====================================================================== */
+/* Isometric Cubic System Animations — Lightweight Vector Motion          */
+/* ====================================================================== */
+
+/* Variant 1: AI Matchmaking — Fragmented pieces drifting and locking */
+@keyframes matchmaking-drift-1 {
+  0%, 100% { transform: translate(-26px, -18px); }
+  45%, 65% { transform: translate(-14px, -8px); }
+}
+
+@keyframes matchmaking-drift-2 {
+  0%, 100% { transform: translate(28px, -14px); }
+  45%, 65% { transform: translate(14px, -8px); }
+}
+
+@keyframes matchmaking-drift-3 {
+  0%, 100% { transform: translate(-22px, 22px); }
+  45%, 65% { transform: translate(-14px, 12px); }
+}
+
+@keyframes matchmaking-drift-4 {
+  0%, 100% { transform: translate(24px, 20px); }
+  45%, 65% { transform: translate(14px, 12px); }
+}
+
+@keyframes matchmaking-accent {
+  0%, 100% { transform: translate(0px, -28px); }
+  45%, 65% { transform: translate(0px, 0px); }
+}
+
+.animate-iso-match-1 {
+  animation: matchmaking-drift-1 7.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.animate-iso-match-2 {
+  animation: matchmaking-drift-2 7.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.animate-iso-match-3 {
+  animation: matchmaking-drift-3 7.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.animate-iso-match-4 {
+  animation: matchmaking-drift-4 7.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.animate-iso-match-accent {
+  animation: matchmaking-accent 7.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+/* Hover alignment acceleration */
+.group:hover .animate-iso-match-1 {
+  transform: translate(-14px, -8px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-match-2 {
+  transform: translate(14px, -8px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-match-3 {
+  transform: translate(-14px, 12px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-match-4 {
+  transform: translate(14px, 12px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-match-accent {
+  transform: translate(0px, 0px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+
+/* Variant 2: Logistics Intelligence — Segmented movement along transit vector */
+@keyframes logistics-slide-a {
+  0% { transform: translate(-38px, -22px); opacity: 0.3; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translate(38px, 22px); opacity: 0.3; }
+}
+
+@keyframes logistics-slide-b {
+  0% { transform: translate(-12px, -7px); }
+  50% { transform: translate(14px, 8px); }
+  100% { transform: translate(-12px, -7px); }
+}
+
+@keyframes logistics-pulse-line {
+  0%, 100% { stroke-dashoffset: 0; opacity: 0.4; }
+  50% { stroke-dashoffset: -24; opacity: 0.9; }
+}
+
+.animate-iso-logistics-a {
+  animation: logistics-slide-a 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-iso-logistics-b {
+  animation: logistics-slide-b 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-iso-logistics-line {
+  animation: logistics-pulse-line 3s linear infinite;
+}
+
+.group:hover .animate-iso-logistics-a {
+  animation-duration: 3.5s;
+}
+.group:hover .animate-iso-logistics-b {
+  animation-duration: 3.5s;
+}
+
+/* Variant 3: Trusted Execution — Multi-layer stacking and completion lock */
+@keyframes execution-layer-bottom {
+  0%, 100% { transform: translateY(0); }
+  40%, 70% { transform: translateY(0); }
+}
+
+@keyframes execution-layer-mid {
+  0%, 100% { transform: translateY(-16px); }
+  40%, 70% { transform: translateY(0); }
+}
+
+@keyframes execution-layer-top {
+  0%, 100% { transform: translateY(-32px); }
+  40%, 70% { transform: translateY(0); }
+}
+
+@keyframes execution-pulse-ring {
+  0%, 35% { opacity: 0; transform: scale(0.9); }
+  45%, 65% { opacity: 0.85; transform: scale(1.05); }
+  75%, 100% { opacity: 0; transform: scale(1.15); }
+}
+
+.animate-iso-exec-bottom {
+  animation: execution-layer-bottom 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+.animate-iso-exec-mid {
+  animation: execution-layer-mid 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+.animate-iso-exec-top {
+  animation: execution-layer-top 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+.animate-iso-exec-pulse {
+  animation: execution-pulse-ring 7s ease-out infinite;
+}
+
+.group:hover .animate-iso-exec-mid {
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-exec-top {
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-play-state: paused;
+}
+.group:hover .animate-iso-exec-pulse {
+  opacity: 1;
+  transform: scale(1.05);
+  animation-play-state: paused;
+}
+
+/* ====================================================================== */
+/* Reduced Motion Accessibility                                            */
+/* ====================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .animate-iso-match-1,
+  .animate-iso-match-2,
+  .animate-iso-match-3,
+  .animate-iso-match-4,
+  .animate-iso-match-accent,
+  .animate-iso-logistics-a,
+  .animate-iso-logistics-b,
+  .animate-iso-logistics-line,
+  .animate-iso-exec-bottom,
+  .animate-iso-exec-mid,
+  .animate-iso-exec-top,
+  .animate-iso-exec-pulse {
+    animation: none !important;
+    transform: none !important;
+  }
+}

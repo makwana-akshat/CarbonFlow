@@ -1,0 +1,253 @@
+/* ====================================================================== */
+/* Section 01 Scoped Styles — CarbonFlow Hero & Product Reveal             */
+/* Locked Typography: Poppins (Headings) + Roboto (Body & Controls)       */
+/* ====================================================================== */
+
+.carbonflow-hero-section {
+  --hero-bg: #03000a;
+  --hero-heading-font: monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+  --hero-body-font: 'gotham', system-ui, -apple-system, sans-serif;
+  --hero-accent: #F4611E;
+  
+  font-family: var(--hero-body-font);
+  background-color: var(--hero-bg);
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  min-height: 180vh;
+  width: 100%;
+}
+
+/* ====================================================================== */
+/* Stacking Context (Layers 0 to 5)                                       */
+/* ====================================================================== */
+.carbonflow-layer-bg {
+  z-index: 0;
+}
+
+.carbonflow-layer-bg-image {
+  z-index: 1;
+}
+
+.carbonflow-layer-reveal {
+  z-index: 2;
+}
+
+.carbonflow-layer-laserflow {
+  z-index: 3;
+}
+
+.carbonflow-layer-content {
+  z-index: 10;
+}
+
+.carbonflow-layer-nav {
+  z-index: 20;
+}
+
+.carbonflow-layer-controls {
+  z-index: 30;
+}
+
+/* ====================================================================== */
+/* Locked Typography System                                                */
+/* ====================================================================== */
+.hero-eyebrow {
+  font-family: var(--hero-body-font);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em; /* +1% tracking */
+  text-transform: uppercase;
+  color: #9499A8;
+}
+
+.hero-heading {
+  font-family: var(--hero-heading-font);
+  font-weight: 655;
+  color: #FFFFFF; /* STRICT: Solid color, absolutely no gradients */
+  letter-spacing: -0.06em; /* -6% tracking */
+  line-height: 1.05;
+  text-transform: uppercase;
+  /* Responsive scale: Desktop 80px | Tablet 64px | Mobile 44px */
+  font-size: clamp(44px, 7vw, 80px);
+}
+
+@media (min-width: 1024px) {
+  .hero-heading {
+    font-size: 80px;
+    line-height: 1.05;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .hero-heading {
+    font-size: 64px;
+    line-height: 1.1;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-heading {
+    font-size: 44px;
+    line-height: 1.15;
+  }
+}
+
+.hero-body {
+  font-family: var(--hero-body-font);
+  color: #B5B9C4;
+  letter-spacing: -0.02em; /* -2% tracking */
+  line-height: 1.6;
+  font-size: 16px;
+  max-width: 520px; /* Constrained to ~50-60 characters per line */
+}
+
+@media (max-width: 640px) {
+  .hero-body {
+    font-size: 16px;
+    line-height: 1.55;
+  }
+}
+
+/* ====================================================================== */
+/* Primary and Secondary CTA Buttons                                      */
+/* ====================================================================== */
+.hero-cta-primary {
+  font-family: var(--hero-body-font);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  background-color: #FFFFFF;
+  color: #0A0A0A;
+  border-radius: 9999px;
+  padding: 12px 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+}
+
+.hero-cta-primary:hover {
+  transform: translateY(-1px);
+  background-color: #F4F4F5;
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.28);
+}
+
+.hero-cta-secondary {
+  font-family: var(--hero-body-font);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #8C92A4;
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 16px;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.hero-cta-secondary:hover {
+  color: #FFFFFF;
+}
+
+/* ====================================================================== */
+/* Transparent Navigation — STRICTLY NO BACKGROUND                       */
+/* ====================================================================== */
+.hero-nav-transparent {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ====================================================================== */
+/* Cursor-Reactive Product Image Reveal (Layer 2)                         */
+/* Uses CSS custom variables --mx and --my set via mousemove              */
+/* ====================================================================== */
+.hero-cursor-reveal-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: lighten;
+  opacity: var(--reveal-opacity, 0);
+  transition: opacity 0.3s ease-out;
+  -webkit-mask-image: radial-gradient(
+    circle 180px at var(--mx, 50%) var(--my, 50%),
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.2) 45%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: radial-gradient(
+    circle 180px at var(--mx, 50%) var(--my, 50%),
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.2) 45%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* Mobile & Touch: subtle persistent image presence without requiring hover */
+@media (hover: none), (max-width: 768px) {
+  .hero-cursor-reveal-mask {
+    opacity: 0.2 !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+}
+
+/* ====================================================================== */
+/* Product Image Container & Lower Stage                                  */
+/* ====================================================================== */
+.hero-product-stage-container {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle at 50% 0%, rgba(30, 32, 45, 0.4) 0%, rgba(5, 5, 12, 0.8) 100%);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(110, 130, 254, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-product-stage-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%);
+  z-index: 2;
+}
+
+/* ====================================================================== */
+/* Capability Strip                                                       */
+/* ====================================================================== */
+.capability-strip {
+  font-family: var(--hero-body-font);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: white;
+}
+
+.capability-strip-item {
+  transition: color 0.2s ease;
+}
+
+.capability-strip-item:hover {
+  color: #C0C5D2;
+}
+
+/* ====================================================================== */
+/* Reduced Motion Respect                                                 */
+/* ====================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .hero-cta-primary,
+  .hero-cta-secondary,
+  .hero-cursor-reveal-mask {
+    transition: none !important;
+  }
+}
