@@ -344,7 +344,7 @@ class ContractService:
     def get_compliance_summary(self, user_id: str):
         contracts = self.get_all_contracts(user_id)
         active = sum(1 for c in contracts if c["status"] == "Active")
-        pending = sum(1 for c in contracts if c["status"] == "Pending Review")
+        pending = sum(1 for c in contracts if c["status"] in ["Pending Review", "Draft"])
         completed = sum(1 for c in contracts if c["status"] == "Completed")
         amended = sum(1 for c in contracts if c["version"] != "v1")
         

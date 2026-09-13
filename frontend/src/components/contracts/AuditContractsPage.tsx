@@ -3,21 +3,20 @@ import { AuditContractsHeader } from './AuditContractsHeader';
 import { ComplianceSummaryBar } from './ComplianceSummaryBar';
 import { AuditContractTable } from './AuditContractTable';
 import { ContractDetailDrawer } from './ContractDetailDrawer';
-import { 
-  type AuditContractItem, 
-  type AuditContractStatus 
-} from '../../data/auditContractsMock';
+import type { AuditContractItem, AuditContractStatus } from './types';
 import { Toast } from '../ui/Feedback';
 import { useAuth } from '@clerk/clerk-react';
 import { getContracts, getComplianceSummary } from '../../services/contractsApi';
 
+import type { ApiComplianceSummary } from '../../services/contractsApi';
+
 export const AuditContractsPage: React.FC = () => {
   const [contracts, setContracts] = useState<AuditContractItem[]>([]);
-  const [summary, setSummary] = useState({
-    activeContracts: 0,
-    pendingApproval: 0,
+  const [summary, setSummary] = useState<ApiComplianceSummary>({
+    active_contracts: 0,
+    pending_approval: 0,
     completed: 0,
-    withAmendments: 0
+    with_amendments: 0
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AuditContractStatus | 'All'>('All');
@@ -43,51 +42,53 @@ export const AuditContractsPage: React.FC = () => {
           getComplianceSummary(token)
         ]);
         if (apiContracts && apiContracts.length > 0) {
-          const mapped: AuditContractItem[] = apiContracts.map(c => ({
-            id: c.id,
-            contractId: c.contract_id,
-            supplier: c.supplier_name,
-            buyer: c.buyer_name,
-            volume: c.volume,
-            contractValue: c.contract_value,
-            createdDate: c.created_date,
-            status: c.status as AuditContractStatus,
-            version: c.version,
-            purity: c.purity || '',
-            pricePerTon: c.price_per_ton || '',
-            deliveryDate: c.delivery_date || '',
-            transportationTerms: c.transportation_terms || '',
-            paymentTerms: c.payment_terms || '',
-            auditHash: c.audit_hash || '',
-            isoStandard: c.iso_standard || '',
-            timeline: c.timeline.map((t: any) => ({
-              step: t.step,
-              label: t.label,
-              timestamp: t.timestamp_str || '',
-              actor: t.actor || '',
-              role: t.role || '',
-              action: t.action || '',
-              notes: t.notes || '',
-              status: t.status
-            })),
-            versionHistory: c.version_history.map((v: any) => ({
-              version: v.version,
-              isCurrent: v.is_current,
-              summary: v.summary || '',
-              date: v.effective_date || '',
-              author: v.author || '',
-              changes: v.changes || []
-            }))
-          }));
+          const mapped: AuditContractItem[] = apiContracts.map(c => {
+            // Map Draft to Pending Review for the UI if desired, or leave as is if UI supports Draft
+            // The UI supports Draft, but ComplianceSummaryBar maps 'Pending Review' to the Review tab.
+            // Let's normalize 'Draft' to 'Pending Review' for the frontend status filter consistency.
+            const uiStatus = c.status === 'Draft' ? 'Pending Review' : c.status;
+            
+            return {
+              id: c.id,
+              contractId: c.contract_id,
+              supplier: c.supplier_name,
+              buyer: c.buyer_name,
+              volume: c.volume,
+              contractValue: c.contract_value,
+              createdDate: c.created_date,
+              status: uiStatus as AuditContractStatus,
+              version: c.version,
+              purity: c.purity || '',
+              pricePerTon: c.price_per_ton || '',
+              deliveryDate: c.delivery_date || '',
+              transportationTerms: c.transportation_terms || '',
+              paymentTerms: c.payment_terms || '',
+              auditHash: c.audit_hash || '',
+              isoStandard: c.iso_standard || '',
+              timeline: c.timeline.map((t: any) => ({
+                step: t.step,
+                label: t.label,
+                timestamp: t.timestamp_str || '',
+                actor: t.actor || '',
+                role: t.role || '',
+                action: t.action || '',
+                notes: t.notes || '',
+                status: t.status
+              })),
+              versionHistory: c.version_history.map((v: any) => ({
+                version: v.version,
+                isCurrent: v.is_current,
+                summary: v.summary || '',
+                date: v.effective_date || '',
+                author: v.author || '',
+                changes: v.changes || []
+              }))
+            };
+          });
           setContracts(mapped);
         }
         if (apiSummary) {
-          setSummary({
-            activeContracts: apiSummary.active_contracts,
-            pendingApproval: apiSummary.pending_approval,
-            completed: apiSummary.completed,
-            withAmendments: apiSummary.with_amendments
-          });
+          setSummary(apiSummary);
         }
       } catch (err) {
         console.error(err);
