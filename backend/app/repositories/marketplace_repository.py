@@ -190,6 +190,7 @@ class MarketplaceRepository:
         results = []
         for inq in inquiries_res.data:
             inq["listing_name"] = listing_map.get(inq.get("listing_id"))
+            inq["supplier_id"] = supplier_id
             results.append(inq)
             
         return results

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Plus } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '@clerk/clerk-react';
 import { getMyRequirements } from '../../services/marketplaceApi';
@@ -17,9 +17,8 @@ export const ProcurementPlansView: React.FC = () => {
       setIsLoading(true);
       const token = await getToken();
       if (!token) return;
-      
-      const reqs = await getMyRequirements(token);
-      setPlans(reqs || []);
+      const data = await getMyRequirements(token);
+      setPlans(data || []);
     } catch (err) {
       console.error('Failed to fetch procurement plans:', err);
     } finally {
@@ -32,34 +31,39 @@ export const ProcurementPlansView: React.FC = () => {
   }, [fetchPlans]);
 
   return (
-    <div className="bg-[var(--surface-card)] rounded-[var(--radius-card)] p-6 border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+    <div className="bg-[var(--surface-card)] rounded-[var(--radius-card)] p-6 border border-[var(--border-subtle)] shadow-[var(--shadow-card)] space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
         <div>
           <div className="flex items-center gap-2">
             <FolderKanban className="w-5 h-5 text-[var(--accent-primary)]" />
             <h2 className="text-[18px] font-bold text-[var(--ink)]">
-              Strategic Procurement Plans
+              Annual / Multi-facility Procurement Plans
             </h2>
           </div>
           <p className="text-[13px] text-[var(--text-secondary-accessible)] mt-1">
-            Quarterly and annual industrial CO₂ feedstock allocation targets, corridor schedules, and multi-supplier quotas.
+            Aggregated corporate requirements and strategic off-take campaigns across pipeline corridors.
           </p>
         </div>
         <Button variant="primary" size="sm" onClick={() => navigate('/app/requirements')}>
-          + New Allocation Plan
+          Create New Campaign
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="py-8 text-center text-[var(--text-secondary)]">Loading plans...</div>
+        <div className="py-12 flex justify-center text-[var(--text-secondary)]">
+          Loading procurement plans...
+        </div>
       ) : plans.length === 0 ? (
-        <div className="py-8 flex flex-col items-center justify-center text-center">
+        <div className="py-12 flex flex-col items-center justify-center text-center">
           <FolderKanban className="w-8 h-8 text-[var(--text-secondary)] mb-3 opacity-50" />
-          <h3 className="text-[15px] font-semibold text-[var(--ink)] mb-1">No Procurement Plans</h3>
-          <p className="text-[13px] text-[var(--text-secondary-accessible)]">Click '+ New Allocation Plan' to get started.</p>
+          <h3 className="text-[15px] font-semibold text-[var(--ink)] mb-1">No Active Procurement Plans</h3>
+          <p className="text-[13px] text-[var(--text-secondary-accessible)] mb-4">You haven't defined any aggregated demand or campaign requirements yet.</p>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/app/requirements')}>
+            Create your first plan
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {plans.map((plan) => {
             const plannedVolume = plan.volume_needed || 0;
             const securedVolume = plan.secured_volume || 0;
@@ -69,7 +73,7 @@ export const ProcurementPlansView: React.FC = () => {
               : 'No Contracted Corridors';
             
             // Map statuses appropriately
-            let statusBadge = '';
+            let statusBadge: React.ReactNode = null;
             if (plan.status === 'active') {
               statusBadge = <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] bg-[#34C77B]/10 text-[var(--status-success)]">Active</span>;
             } else if (plan.status === 'fulfilled') {

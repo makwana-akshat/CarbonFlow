@@ -9,7 +9,7 @@ import {
   Layers,
   History
 } from 'lucide-react';
-import type { AuditContractItem } from '../../data/auditContractsMock';
+import type { AuditContractItem } from './types';
 import { ContractAuditTimeline } from './ContractAuditTimeline';
 import { ContractVersionHistory } from './ContractVersionHistory';
 
@@ -196,7 +196,7 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
               {activeTab === 'timeline' ? (
                 <ContractAuditTimeline timeline={contract.timeline} />
               ) : (
-                <ContractVersionHistory versions={contract.versionHistory} />
+                <ContractVersionHistory history={contract.versionHistory} />
               )}
             </div>
 

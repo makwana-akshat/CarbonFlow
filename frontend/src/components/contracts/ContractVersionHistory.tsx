@@ -1,12 +1,12 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import type { ContractVersionInfo } from '../../data/auditContractsMock';
+import type { AuditVersionEvent } from './types';
 
 export interface ContractVersionHistoryProps {
-  versions: ContractVersionInfo[];
+  history: AuditVersionEvent[];
 }
 
-export const ContractVersionHistory: React.FC<ContractVersionHistoryProps> = ({ versions }) => {
+export const ContractVersionHistory: React.FC<ContractVersionHistoryProps> = ({ history }) => {
   return (
     <div className="space-y-4 text-left">
       <div className="flex items-center justify-between">
@@ -14,12 +14,12 @@ export const ContractVersionHistory: React.FC<ContractVersionHistoryProps> = ({ 
           Amendment &amp; Version History
         </h3>
         <span className="text-[10px] font-mono text-[var(--text-secondary)]">
-          {versions.length} Revisions Logged
+          {history.length} Revisions Logged
         </span>
       </div>
 
       <div className="space-y-3">
-        {versions.map((ver) => (
+        {history.map((ver) => (
           <div
             key={ver.version}
             className={`p-3 rounded-[var(--radius-card)] border transition-colors ${
@@ -41,7 +41,7 @@ export const ContractVersionHistory: React.FC<ContractVersionHistoryProps> = ({ 
               </div>
               <span className="text-[10px] font-mono text-[var(--text-secondary)] flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-[var(--text-secondary)]" />
-                {ver.effectiveDate}
+                {ver.date}
               </span>
             </div>
 

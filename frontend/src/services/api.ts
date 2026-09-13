@@ -17,8 +17,16 @@ export const fetchWithAuth = async (
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
+    let errorDetail = response.statusText;
+    try {
+      const errJson = await response.json();
+      if (errJson?.detail) {
+        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      }
+    } catch {}
+    throw new Error(`API Error (${response.status}): ${errorDetail}`);
   }
 
   return response.json();
 };
+

@@ -9,6 +9,7 @@ import type {
   FacilityNode,
   RouteData,
   CarbonFlowEdge,
+  RegionData,
 } from '../../types/maps';
 import { DEFAULT_MAP_FILTERS } from '../../types/maps';
 import { InteractiveMap } from './InteractiveMap';

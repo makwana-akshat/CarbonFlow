@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Download, ChevronDown, Calendar, Filter } from 'lucide-react';
-import type { AuditContractStatus } from '../../data/auditContractsMock';
+import type { AuditContractStatus } from './types';
 
 export interface AuditContractsHeaderProps {
   searchQuery: string;

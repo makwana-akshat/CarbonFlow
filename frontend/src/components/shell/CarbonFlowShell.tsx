@@ -15,7 +15,7 @@ import { MyRequirementsView } from '../requirements/MyRequirementsView';
 import { MySupplyView } from '../supply/MySupplyView';
 import { LogisticsRoutePlanning } from '../logistics/LogisticsRoutePlanning';
 import { Button } from '../ui/Button';
-import { CheckCircle2, Menu, FolderKanban, Users, Inbox } from 'lucide-react';
+import { CheckCircle2, Menu, Users, Inbox } from 'lucide-react';
 import { UserMenu } from '../auth/UserMenu';
 import { CarbonImpactPage } from '../impact/CarbonImpactPage';
 import { AlertsPage } from '../alerts/AlertsPage';
@@ -83,11 +83,17 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
   });
 
   // Fetch Supplier Inquiries
-  const { data: supplierInquiries, isLoading: isLoadingInquiries } = useQuery({
+  const { 
+    data: supplierInquiries, 
+    isLoading: isLoadingInquiries,
+    isError: isErrorInquiries,
+    error: errorInquiries,
+    refetch: refetchInquiries
+  } = useQuery({
     queryKey: ['supplier-inquiries'],
     queryFn: async () => {
       const token = await getToken();
-      if (!token || userRole !== 'supplier') return [];
+      if (!token) throw new Error('Authentication token required');
       return getSupplierInquiries(token);
     },
     enabled: userRole === 'supplier' && location.pathname === '/app/buyer-requests',
@@ -100,25 +106,21 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['supplier-inquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
       showToast('Inquiry accepted! Contract drafted.');
       if (data?.contract?.id) {
         navigate(`/app/audit-contracts`);
       }
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.detail || 'Failed to accept inquiry and draft contract.';
+      const msg = error.message || 'Failed to accept inquiry and draft contract.';
       showToast(msg);
       console.error(error);
     },
   });
 
-  const [inquiriesList, setInquiriesList] = useState<any[]>([]);
-  useEffect(() => {
-    if (supplierInquiries) {
-      setInquiriesList(supplierInquiries);
-    }
-  }, [supplierInquiries]);
-  
+  const inquiriesList = supplierInquiries || [];
+
 
   // Determine current active subpath
   const currentPath = location.pathname;
@@ -509,6 +511,12 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                 
                 {isLoadingInquiries ? (
                   <div className="py-12 flex justify-center text-[var(--text-secondary)]">Loading buyer requests...</div>
+                ) : isErrorInquiries ? (
+                  <ErrorState 
+                    title="Failed to Load Buyer Requests"
+                    message={(errorInquiries as Error)?.message || 'Database error: Could not retrieve incoming buyer requests.'}
+                    onRetry={() => refetchInquiries()}
+                  />
                 ) : inquiriesList.length === 0 ? (
                   <div className="py-12 flex flex-col items-center justify-center text-center">
                     <Inbox className="w-8 h-8 text-[var(--text-secondary)] mb-3 opacity-50" />
@@ -517,44 +525,52 @@ export const CarbonFlowShell: React.FC<CarbonFlowShellProps> = ({
                   </div>
                 ) : (
                   <div className="divide-y divide-[var(--border-subtle)]">
-                    {inquiriesList.map((inq: any) => (
-                      <div key={inq.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[14px] text-[var(--ink)]">{inq.users?.company_name || 'Unknown Buyer'}</span>
-                            <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded">
-                              INQ-{inq.id.split('-')[0].toUpperCase()}
-                            </span>
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] ${inq.status === 'Accepted' ? 'bg-[var(--status-success)]/10 text-[var(--status-success)]' : 'bg-[#F5A623]/10 text-[var(--status-warning)]'}`}>
-                              {inq.status || 'Pending Offer'}
-                            </span>
+                    {inquiriesList.map((inq: any) => {
+                      const buyerName = inq.users?.company_name || 
+                        [inq.users?.first_name, inq.users?.last_name].filter(Boolean).join(' ') || 
+                        inq.users?.email || 
+                        'Unknown Buyer';
+                      const isAccepted = inq.status?.toLowerCase() === 'accepted';
+
+                      return (
+                        <div key={inq.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[14px] text-[var(--ink)]">{buyerName}</span>
+                              <span className="font-mono text-[10px] text-[var(--text-secondary-accessible)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded">
+                                INQ-{inq.id.split('-')[0].toUpperCase()}
+                              </span>
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-[var(--radius-pill)] ${isAccepted ? 'bg-[var(--status-success)]/10 text-[var(--status-success)]' : 'bg-[#F5A623]/10 text-[var(--status-warning)]'}`}>
+                                {inq.status || 'Pending Offer'}
+                              </span>
+                            </div>
+                            <div className="text-[12px] text-[var(--text-secondary-accessible)] flex flex-wrap items-center gap-1.5">
+                              <span>Target Stream: <strong className="text-[var(--ink)] font-semibold">{inq.listing_name || 'Unknown Stream'}</strong></span>
+                              <span className="text-[var(--border-subtle)]">•</span>
+                              <span>Volume: <strong className="text-[var(--ink)] font-semibold">{inq.volume_needed?.toLocaleString()} t</strong></span>
+                              <span className="text-[var(--border-subtle)]">•</span>
+                              <span>Offered: <strong className="text-[var(--accent-primary)] font-semibold">₹{inq.target_price?.toLocaleString()}/t</strong></span>
+                              <span className="text-[var(--border-subtle)]">•</span>
+                              <span>{new Date(inq.created_at).toLocaleDateString()}</span>
+                            </div>
                           </div>
-                          <div className="text-[12px] text-[var(--text-secondary-accessible)] flex flex-wrap items-center gap-1.5">
-                            <span>Target Stream: <strong className="text-[var(--ink)] font-semibold">{inq.listing_name || 'Unknown Stream'}</strong></span>
-                            <span className="text-[var(--border-subtle)]">•</span>
-                            <span>Volume: <strong className="text-[var(--ink)] font-semibold">{inq.volume_needed?.toLocaleString()} t</strong></span>
-                            <span className="text-[var(--border-subtle)]">•</span>
-                            <span>Offered: <strong className="text-[var(--accent-primary)] font-semibold">₹{inq.target_price?.toLocaleString()}/t</strong></span>
-                            <span className="text-[var(--border-subtle)]">•</span>
-                            <span>{new Date(inq.created_at).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={() => showToast(`Opening chat with ${buyerName}`)}>
+                              Contact Buyer
+                            </Button>
+                            <Button 
+                              variant="primary" 
+                              size="sm" 
+                              className="flex-1 sm:flex-none" 
+                              disabled={acceptMutation.isPending || isAccepted} 
+                              onClick={() => acceptMutation.mutate(inq.id)}
+                            >
+                              {acceptMutation.isPending ? 'Drafting...' : isAccepted ? 'Contract Drafted' : 'Accept & Draft Contract'}
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={() => showToast(`Opening chat with ${inq.users?.company_name || 'Buyer'}`)}>
-                            Contact Buyer
-                          </Button>
-                          <Button 
-                            variant="primary" 
-                            size="sm" 
-                            className="flex-1 sm:flex-none" 
-                            disabled={acceptMutation.isPending || inq.status === 'Accepted'} 
-                            onClick={() => acceptMutation.mutate(inq.id)}
-                          >
-                            {acceptMutation.isPending ? 'Drafting...' : inq.status === 'Accepted' ? 'Contract Drafted' : 'Accept & Draft Contract'}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

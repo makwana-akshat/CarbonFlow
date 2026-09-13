@@ -120,7 +120,33 @@ export const createInquiry = async (token: string | null, data: any): Promise<an
   });
 };
 
-export const getSupplierInquiries = async (token: string | null): Promise<any[]> => {
+export interface SupplierInquiry {
+  id: string;
+  buyer_id: string;
+  listing_id: string;
+  supplier_id?: string;
+  listing_name?: string;
+  required_grade?: string;
+  volume_needed: number;
+  target_price: number;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  title?: string;
+  min_purity_required?: number;
+  location?: string;
+  application?: string;
+  required_by_date?: string;
+  delivery_method?: string;
+  users?: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+    company_name: string | null;
+  };
+}
+
+export const getSupplierInquiries = async (token: string | null): Promise<SupplierInquiry[]> => {
   return fetchWithAuth('/marketplace/inquiries/me', token);
 };
 
@@ -129,3 +155,4 @@ export const acceptInquiry = async (token: string | null, id: string): Promise<a
     method: 'POST',
   });
 };
+

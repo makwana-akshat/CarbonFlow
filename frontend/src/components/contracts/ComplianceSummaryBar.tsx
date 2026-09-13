@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ComplianceSummary } from '../../data/auditContractsMock';
+import type { ApiComplianceSummary } from '../../services/contractsApi';
 
 export interface ComplianceSummaryBarProps {
-  summary: ComplianceSummary;
+  summary: ApiComplianceSummary;
   onFilterActive?: () => void;
   onFilterPending?: () => void;
 }
@@ -28,7 +28,7 @@ export const ComplianceSummaryBar: React.FC<ComplianceSummaryBarProps> = ({
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-bold font-mono text-[var(--ink)]">
-                {summary.activeContracts}
+                {summary.active_contracts}
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
                 Active
@@ -52,7 +52,7 @@ export const ComplianceSummaryBar: React.FC<ComplianceSummaryBarProps> = ({
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-bold font-mono text-[var(--ink)]">
-                {summary.pendingApproval}
+                {summary.pending_approval}
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                 Review
@@ -92,7 +92,7 @@ export const ComplianceSummaryBar: React.FC<ComplianceSummaryBarProps> = ({
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-bold font-mono text-blue-700">
-                {summary.withAmendments}
+                {summary.with_amendments}
               </span>
               <span className="text-[10px] font-semibold text-blue-700">
                 Versioned

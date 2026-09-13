@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Shipment, TransportModeId } from './types';
-import { SAMPLE_SHIPMENTS, getEligibleModes, getRouteOptionsForMode } from './mockShipments';
+import { getEligibleModes, getRouteOptionsForMode } from './mockShipments';
 import { LogisticsMap } from './LogisticsMap';
 import { useAuth } from '@clerk/clerk-react';
 import { useSearchParams } from 'react-router-dom';
@@ -16,7 +16,6 @@ import {
   ArrowLeft,
   AlertOctagon,
   Sparkles,
-  ChevronDown,
   Menu,
   Truck,
   Milestone,
@@ -36,7 +35,6 @@ interface LogisticsRoutePlanningProps {
 
 export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
   onBackToOrders,
-  onRequestUpgrade,
   onOpenMobileMenu,
   className = '',
 }) => {
@@ -296,72 +294,10 @@ export const LogisticsRoutePlanning: React.FC<LogisticsRoutePlanningProps> = ({
                     <span>Live Telemetry</span>
                   </div>
 
-                  {/* Evaluator Scenario Dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsScenarioDropdownOpen(!isScenarioDropdownOpen)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-[11px] font-medium text-gray-600 transition-colors shadow-2xs cursor-pointer"
-                      title="Test different shipment scenarios"
-                    >
-                      <Sparkles className="w-3 h-3 text-[#F4611E]" />
-                      <span className="hidden sm:inline">{currentShipment.purity}%</span>
-                      <ChevronDown className="w-3 h-3 text-gray-400" />
-                    </button>
-
-                    {isScenarioDropdownOpen && (
-                      <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-gray-200 bg-white shadow-xl p-1.5 z-50 flex flex-col gap-0.5">
-                        <span className="text-[10px] uppercase font-bold text-gray-400 px-2 py-1">
-                          Preset Shipments
-                        </span>
-                        {SAMPLE_SHIPMENTS.map((s, idx) => (
-                          <button
-                            key={s.id}
-                            onClick={() => {
-                              setSelectedScenarioIndex(idx);
-                              setForcedState('normal');
-                              setIsScenarioDropdownOpen(false);
-                            }}
-                            className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                              selectedScenarioIndex === idx && forcedState === 'normal'
-                                ? 'bg-[#FFF7ED] text-[#F4611E] font-semibold border border-[#F4611E]/30'
-                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className="font-bold text-[11px]">{s.id}</div>
-                            <div className="text-[10px] text-gray-500">
-                              {s.purity}% Purity • {s.physicalState} ({s.volume}t)
-                            </div>
-                          </button>
-                        ))}
-                        <div className="border-t border-gray-100 my-1" />
-                        <button
-                          onClick={() => {
-                            setForcedState('no-route');
-                            setIsScenarioDropdownOpen(false);
-                          }}
-                          className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                            (forcedState as string) === 'no-route'
-                              ? 'bg-[#FFF7ED] text-[#F4611E] font-semibold'
-                              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                          }`}
-                        >
-                          Unviable Route State
-                        </button>
-                        <button
-                          onClick={() => {
-                            setForcedState('loading');
-                            setIsScenarioDropdownOpen(false);
-                          }}
-                          className={`text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                            (forcedState as string) === 'loading'
-                              ? 'bg-[#FFF7ED] text-[#F4611E] font-semibold'
-                              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                          }`}
-                        >
-                          Skeleton Loading
-                        </button>
-                      </div>
-                    )}
+                  {/* Shipment Purity Badge */}
+                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-gray-200 text-[11px] font-medium text-gray-700 shadow-2xs">
+                    <Sparkles className="w-3 h-3 text-[#F4611E]" />
+                    <span>{currentShipment.purity}% Purity</span>
                   </div>
                 </div>
               </div>

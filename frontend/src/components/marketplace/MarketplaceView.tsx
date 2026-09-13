@@ -7,6 +7,7 @@ import { CO2ListingCard } from '../ui/CO2ListingCard';
 import { RequirementCard } from './RequirementCard';
 import { RequestModal } from './RequestModal';
 import { useAuth } from '@clerk/clerk-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getListings, getAllRequirements, createInquiry } from '../../services/marketplaceApi';
 import type {
   MarketplaceMode,
@@ -25,12 +26,14 @@ interface MarketplaceViewProps {
 export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   mode = 'supply',
 }) => {
+  const queryClient = useQueryClient();
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(true);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
   const { getToken } = useAuth();
+
   const [apiListings, setApiListings] = useState<SupplyListing[]>([]);
   const [apiRequirements, setApiRequirements] = useState<DemandRequirement[]>([]);
 
@@ -213,6 +216,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           notes: data.notes
         };
         await createInquiry(token, payload);
+        queryClient.invalidateQueries({ queryKey: ['supplier-inquiries'] });
         showToast(`CO₂ offtake request of ${data.volume} t dispatched to ${selectedSupplyListing.companyName}.`);
       } else if (selectedRequirement) {
         // Supply an offer to a demand requirement
