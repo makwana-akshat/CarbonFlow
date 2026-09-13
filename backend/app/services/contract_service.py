@@ -31,7 +31,14 @@ class ContractService:
     def __init__(self):
         self.supabase = get_supabase_client()
 
+    def _get_internal_user_id(self, clerk_id: str) -> str:
+        user_res = self.supabase.table("users").select("id").eq("clerk_user_id", clerk_id).execute()
+        if not user_res.data:
+            raise ValueError(f"User not found for clerk_id: {clerk_id}")
+        return user_res.data[0]["id"]
+
     def create_contract(self, user_id: str, payload: ContractCreate):
+        internal_id = self._get_internal_user_id(user_id)
         # Verify order
         order_res = self.supabase.table("orders").select("*, buyer:users!buyer_id(id, first_name, last_name), supplier:users!supplier_id(id, first_name, last_name)").eq("id", str(payload.order_id)).execute()
         if not order_res.data:
@@ -39,7 +46,7 @@ class ContractService:
         order = order_res.data[0]
 
         # Verify access
-        if str(order["buyer_id"]) != user_id and str(order["supplier_id"]) != user_id:
+        if str(order["buyer_id"]) != internal_id and str(order["supplier_id"]) != internal_id:
             raise PermissionError("Not authorized to create a contract for this order")
             
         if order["status"] == "cancelled":
@@ -126,6 +133,7 @@ class ContractService:
         return self.get_contract(user_id, contract["id"])
 
     def create_contract_from_inquiry(self, user_id: str, payload: ContractCreateFromInquiry):
+        internal_id = self._get_internal_user_id(user_id)
         # Verify inquiry
         inquiry_res = self.supabase.table("co2_requests").select("*, buyer:users!buyer_id(id, first_name, last_name, company_name)").eq("id", str(payload.request_id)).execute()
         if not inquiry_res.data:
@@ -139,7 +147,7 @@ class ContractService:
         listing = listing_res.data[0]
         
         # Verify access
-        if str(inquiry["buyer_id"]) != user_id and str(listing["supplier_id"]) != user_id:
+        if str(inquiry["buyer_id"]) != internal_id and str(listing["supplier_id"]) != internal_id:
             raise PermissionError("Not authorized to create a contract for this inquiry")
             
         if inquiry["status"] == "cancelled":
@@ -228,12 +236,13 @@ class ContractService:
         return self.get_contract(user_id, contract["id"])
 
     def get_contract(self, user_id: str, contract_uuid: str):
+        internal_id = self._get_internal_user_id(user_id)
         c_res = self.supabase.table("audit_contracts").select("*").eq("id", contract_uuid).execute()
         if not c_res.data:
             return None
         c = c_res.data[0]
         
-        if c["buyer_user_id"] != user_id and c["supplier_user_id"] != user_id:
+        if c["buyer_user_id"] != internal_id and c["supplier_user_id"] != internal_id:
             raise PermissionError("Not authorized to view this contract")
 
         v_res = self.supabase.table("contract_versions").select("*").eq("contract_id", c["id"]).order("created_at", desc=True).execute()
@@ -248,7 +257,8 @@ class ContractService:
         return c
 
     def get_all_contracts(self, user_id: str):
-        c_res = self.supabase.table("audit_contracts").select("*").or_(f"buyer_user_id.eq.{user_id},supplier_user_id.eq.{user_id}").order("created_at", desc=True).execute()
+        internal_id = self._get_internal_user_id(user_id)
+        c_res = self.supabase.table("audit_contracts").select("*").or_(f"buyer_user_id.eq.{internal_id},supplier_user_id.eq.{internal_id}").order("created_at", desc=True).execute()
         
         results = []
         for c in c_res.data:

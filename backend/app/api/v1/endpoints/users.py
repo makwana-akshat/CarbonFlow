@@ -19,6 +19,17 @@ class UpdateUserRequest(BaseModel):
     last_name: Optional[str] = None
     organisation: Optional[str] = None
     role: Optional[str] = None
+    phone: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    co2_capacity: Optional[int] = None
+    facility_location: Optional[str] = None
+    is_verified: Optional[bool] = None
+    notif_price_alerts: Optional[bool] = None
+    notif_supply_alerts: Optional[bool] = None
+    notif_order_updates: Optional[bool] = None
+    notif_contract_notifs: Optional[bool] = None
 
 @router.patch("/me", response_model=UserResponse)
 def update_current_user(request: UpdateUserRequest, clerk_user_id: str = Depends(get_current_user_id)):
